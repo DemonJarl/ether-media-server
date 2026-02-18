@@ -1,0 +1,41 @@
+{
+	"abstract" : true,
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library"
+		],
+		"files" : 
+		[
+			"build/_deps/cache-src/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 36,
+				"parent" : 0
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	},
+	"id" : "caches::@bdb08cd76a86f7c9291e",
+	"name" : "caches",
+	"paths" : 
+	{
+		"build" : "_deps/cache-build",
+		"source" : "build/_deps/cache-src"
+	},
+	"sources" : [],
+	"type" : "INTERFACE_LIBRARY"
+}

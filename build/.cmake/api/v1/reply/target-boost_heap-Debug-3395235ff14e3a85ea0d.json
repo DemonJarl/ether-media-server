@@ -1,0 +1,126 @@
+{
+	"abstract" : true,
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_link_libraries"
+		],
+		"files" : 
+		[
+			"build/_deps/boost-src/libs/heap/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 17,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 24,
+				"parent" : 0
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	},
+	"id" : "boost_heap::@b37e91e39a6b984c3380",
+	"interfaceCompileDependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_concept_check::@003dcddc9f513f5c8bfe"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_intrusive::@3e0af5c1af548a59ab8d"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_iterator::@2647375738d072f43182"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_parameter::@a7a11ecccce1e0d4f4d6"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_static_assert::@3bed1403c8623e791ab9"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_throw_exception::@83cb61eed02efd6dd30e"
+		}
+	],
+	"interfaceLinkLibraries" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_concept_check::@003dcddc9f513f5c8bfe"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_intrusive::@3e0af5c1af548a59ab8d"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_iterator::@2647375738d072f43182"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_parameter::@a7a11ecccce1e0d4f4d6"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_static_assert::@3bed1403c8623e791ab9"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_throw_exception::@83cb61eed02efd6dd30e"
+		}
+	],
+	"name" : "boost_heap",
+	"paths" : 
+	{
+		"build" : "_deps/boost-build/libs/heap",
+		"source" : "build/_deps/boost-src/libs/heap"
+	},
+	"sources" : [],
+	"type" : "INTERFACE_LIBRARY"
+}

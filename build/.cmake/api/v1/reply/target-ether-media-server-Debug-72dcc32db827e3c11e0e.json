@@ -1,0 +1,2046 @@
+{
+	"artifacts" : 
+	[
+		{
+			"path" : "ether-media-server"
+		}
+	],
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_executable",
+			"target_link_libraries",
+			"set_property",
+			"_pkg_create_imp_target",
+			"_pkg_recalculate",
+			"_pkg_check_modules_internal",
+			"pkg_check_modules",
+			"set_target_properties",
+			"include",
+			"find_package",
+			"__find_dependency_common",
+			"find_dependency",
+			"target_include_directories",
+			"target_sources"
+		],
+		"files" : 
+		[
+			"CMakeLists.txt",
+			"/usr/share/cmake/Modules/FindPkgConfig.cmake",
+			"/usr/lib/cmake/spdlog/spdlogConfigTargets.cmake",
+			"/usr/lib/cmake/spdlog/spdlogConfig.cmake",
+			"build/_deps/cpr-src/cpr/CMakeLists.txt",
+			"/usr/local/lib/cmake/Drogon/DrogonTargets.cmake",
+			"/usr/local/lib/cmake/Drogon/DrogonConfig.cmake",
+			"/usr/local/lib/cmake/Trantor/Findc-ares.cmake",
+			"/usr/share/cmake/Modules/CMakeFindDependencyMacro.cmake",
+			"/usr/local/lib/cmake/Trantor/TrantorConfig.cmake",
+			"/usr/local/lib/cmake/Trantor/TrantorTargets.cmake",
+			"/usr/local/lib/cmake/Drogon/FindJsoncpp.cmake",
+			"/usr/local/lib/cmake/Drogon/FindUUID.cmake",
+			"/usr/local/lib/cmake/Drogon/FindBrotli.cmake",
+			"/usr/local/lib/cmake/Drogon/Findpg.cmake",
+			"/usr/local/lib/cmake/Drogon/FindSQLite3.cmake",
+			"/usr/local/lib/cmake/Drogon/FindHiredis.cmake"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 29,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 88,
+				"parent" : 0
+			},
+			{
+				"command" : 6,
+				"file" : 0,
+				"line" : 42,
+				"parent" : 0
+			},
+			{
+				"command" : 5,
+				"file" : 1,
+				"line" : 1166,
+				"parent" : 3
+			},
+			{
+				"command" : 4,
+				"file" : 1,
+				"line" : 1149,
+				"parent" : 4
+			},
+			{
+				"command" : 3,
+				"file" : 1,
+				"line" : 813,
+				"parent" : 5
+			},
+			{
+				"command" : 2,
+				"file" : 1,
+				"line" : 794,
+				"parent" : 6
+			},
+			{
+				"command" : 9,
+				"file" : 0,
+				"line" : 87,
+				"parent" : 0
+			},
+			{
+				"file" : 3,
+				"parent" : 8
+			},
+			{
+				"command" : 8,
+				"file" : 3,
+				"line" : 52,
+				"parent" : 9
+			},
+			{
+				"file" : 2,
+				"parent" : 10
+			},
+			{
+				"command" : 7,
+				"file" : 2,
+				"line" : 70,
+				"parent" : 11
+			},
+			{
+				"file" : 4
+			},
+			{
+				"command" : 1,
+				"file" : 4,
+				"line" : 36,
+				"parent" : 13
+			},
+			{
+				"command" : 9,
+				"file" : 0,
+				"line" : 86,
+				"parent" : 0
+			},
+			{
+				"file" : 6,
+				"parent" : 15
+			},
+			{
+				"command" : 8,
+				"file" : 6,
+				"line" : 79,
+				"parent" : 16
+			},
+			{
+				"file" : 5,
+				"parent" : 17
+			},
+			{
+				"command" : 7,
+				"file" : 5,
+				"line" : 61,
+				"parent" : 18
+			},
+			{
+				"command" : 11,
+				"file" : 6,
+				"line" : 40,
+				"parent" : 16
+			},
+			{
+				"command" : 10,
+				"file" : 8,
+				"line" : 125,
+				"parent" : 20
+			},
+			{
+				"command" : 9,
+				"file" : 8,
+				"line" : 93,
+				"parent" : 21
+			},
+			{
+				"file" : 9,
+				"parent" : 22
+			},
+			{
+				"command" : 11,
+				"file" : 9,
+				"line" : 46,
+				"parent" : 23
+			},
+			{
+				"command" : 10,
+				"file" : 8,
+				"line" : 125,
+				"parent" : 24
+			},
+			{
+				"command" : 9,
+				"file" : 8,
+				"line" : 93,
+				"parent" : 25
+			},
+			{
+				"file" : 7,
+				"parent" : 26
+			},
+			{
+				"command" : 7,
+				"file" : 7,
+				"line" : 16,
+				"parent" : 27
+			},
+			{
+				"command" : 8,
+				"file" : 9,
+				"line" : 57,
+				"parent" : 23
+			},
+			{
+				"file" : 10,
+				"parent" : 29
+			},
+			{
+				"command" : 7,
+				"file" : 10,
+				"line" : 61,
+				"parent" : 30
+			},
+			{
+				"command" : 11,
+				"file" : 6,
+				"line" : 39,
+				"parent" : 16
+			},
+			{
+				"command" : 10,
+				"file" : 8,
+				"line" : 125,
+				"parent" : 32
+			},
+			{
+				"command" : 9,
+				"file" : 8,
+				"line" : 93,
+				"parent" : 33
+			},
+			{
+				"file" : 11,
+				"parent" : 34
+			},
+			{
+				"command" : 7,
+				"file" : 11,
+				"line" : 67,
+				"parent" : 35
+			},
+			{
+				"command" : 11,
+				"file" : 6,
+				"line" : 42,
+				"parent" : 16
+			},
+			{
+				"command" : 10,
+				"file" : 8,
+				"line" : 125,
+				"parent" : 37
+			},
+			{
+				"command" : 9,
+				"file" : 8,
+				"line" : 93,
+				"parent" : 38
+			},
+			{
+				"file" : 12,
+				"parent" : 39
+			},
+			{
+				"command" : 7,
+				"file" : 12,
+				"line" : 110,
+				"parent" : 40
+			},
+			{
+				"command" : 11,
+				"file" : 6,
+				"line" : 55,
+				"parent" : 16
+			},
+			{
+				"command" : 10,
+				"file" : 8,
+				"line" : 125,
+				"parent" : 42
+			},
+			{
+				"command" : 9,
+				"file" : 8,
+				"line" : 93,
+				"parent" : 43
+			},
+			{
+				"file" : 13,
+				"parent" : 44
+			},
+			{
+				"command" : 7,
+				"file" : 13,
+				"line" : 45,
+				"parent" : 45
+			},
+			{
+				"command" : 11,
+				"file" : 6,
+				"line" : 46,
+				"parent" : 16
+			},
+			{
+				"command" : 10,
+				"file" : 8,
+				"line" : 125,
+				"parent" : 47
+			},
+			{
+				"command" : 9,
+				"file" : 8,
+				"line" : 93,
+				"parent" : 48
+			},
+			{
+				"file" : 14,
+				"parent" : 49
+			},
+			{
+				"command" : 7,
+				"file" : 14,
+				"line" : 16,
+				"parent" : 50
+			},
+			{
+				"command" : 11,
+				"file" : 6,
+				"line" : 49,
+				"parent" : 16
+			},
+			{
+				"command" : 10,
+				"file" : 8,
+				"line" : 125,
+				"parent" : 52
+			},
+			{
+				"command" : 9,
+				"file" : 8,
+				"line" : 93,
+				"parent" : 53
+			},
+			{
+				"file" : 15,
+				"parent" : 54
+			},
+			{
+				"command" : 7,
+				"file" : 15,
+				"line" : 33,
+				"parent" : 55
+			},
+			{
+				"command" : 11,
+				"file" : 6,
+				"line" : 61,
+				"parent" : 16
+			},
+			{
+				"command" : 10,
+				"file" : 8,
+				"line" : 125,
+				"parent" : 57
+			},
+			{
+				"command" : 9,
+				"file" : 8,
+				"line" : 93,
+				"parent" : 58
+			},
+			{
+				"file" : 16,
+				"parent" : 59
+			},
+			{
+				"command" : 7,
+				"file" : 16,
+				"line" : 36,
+				"parent" : 60
+			},
+			{
+				"command" : 12,
+				"file" : 0,
+				"line" : 124,
+				"parent" : 0
+			},
+			{
+				"command" : 13,
+				"file" : 0,
+				"line" : 135,
+				"parent" : 0
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	},
+	"compileDependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "PkgConfig::LIBAV::@6890427a1f51a3e7e1df"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_algorithm::@ea94240d380103da7f7a"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "BS_thread_pool::@6890427a1f51a3e7e1df"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "bcrypt::@19278b15613a4da0e446"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "libcron::@12efd879dac1a18187fd"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "spdlog::spdlog::@6890427a1f51a3e7e1df"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "cpr::@c4b08663df96993e8225"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "Drogon::Drogon::@6890427a1f51a3e7e1df"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "caches::@bdb08cd76a86f7c9291e"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "PkgConfig::LIBAV::@6890427a1f51a3e7e1df"
+		}
+	],
+	"compileGroups" : 
+	[
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : "-g -std=c++23"
+				}
+			],
+			"defines" : 
+			[
+				{
+					"backtrace" : 2,
+					"define" : "FMT_SHARED"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "HAS_YAML_CPP"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "SPDLOG_COMPILED_LIB"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "SPDLOG_FMT_EXTERNAL"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "SPDLOG_SHARED_LIB"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 62,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server"
+				},
+				{
+					"backtrace" : 62,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/models"
+				},
+				{
+					"backtrace" : 62,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/utils"
+				},
+				{
+					"backtrace" : 62,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/MetaDataAPI"
+				},
+				{
+					"backtrace" : 62,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/MetaDataAPI/TMDB"
+				},
+				{
+					"backtrace" : 62,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/MetaDataAPI/TMDB/Models"
+				},
+				{
+					"backtrace" : 62,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/MetaDataAPI/TMDB/Endpoints"
+				},
+				{
+					"backtrace" : 62,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/MetaDataAPI/TMDB/Enums"
+				},
+				{
+					"backtrace" : 62,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/MetaDataAPI/TMDB/Utils"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/algorithm/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/array/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/assert/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/config/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/static_assert/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/throw_exception/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/bind/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/core/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/concept_check/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/preprocessor/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/type_traits/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/exception/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/smart_ptr/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/tuple/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/function/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/iterator/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/detail/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/fusion/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/container_hash/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/describe/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/mp11/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/function_types/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/mpl/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/predef/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/utility/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/io/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/typeof/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/functional/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/optional/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/range/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/conversion/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/regex/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/unordered/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/bs_thread_pool-src/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/bcrypt-src/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/libcron-src/libcron/externals/date/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/libcron-src/libcron/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/cpr-src/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/cpr-build/cpr_generated_includes"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/curl-src/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/cache-src/include"
+				}
+			],
+			"language" : "CXX",
+			"languageStandard" : 
+			{
+				"backtraces" : 
+				[
+					2,
+					2,
+					2,
+					2
+				],
+				"standard" : "23"
+			},
+			"sourceIndexes" : 
+			[
+				0,
+				1,
+				2,
+				3,
+				4,
+				5,
+				6,
+				7,
+				8,
+				9,
+				10,
+				11,
+				12,
+				13,
+				14,
+				15,
+				16,
+				17,
+				18,
+				19,
+				20,
+				21,
+				22,
+				23,
+				24,
+				25,
+				26,
+				27,
+				28,
+				29,
+				30,
+				31,
+				32,
+				33,
+				34,
+				35,
+				36,
+				37,
+				38,
+				39,
+				40,
+				41,
+				42,
+				43,
+				44,
+				45,
+				46,
+				47,
+				48,
+				49,
+				50,
+				51,
+				52,
+				53,
+				54,
+				55,
+				56,
+				57,
+				58,
+				59,
+				60,
+				61,
+				62,
+				63,
+				64,
+				65,
+				66,
+				67,
+				68,
+				69,
+				70,
+				71,
+				72,
+				73,
+				74,
+				75,
+				76,
+				77,
+				78,
+				79,
+				80,
+				81,
+				82,
+				83,
+				84,
+				85,
+				86,
+				87,
+				88,
+				89,
+				90,
+				91,
+				92,
+				93,
+				94,
+				95,
+				96,
+				97,
+				98,
+				99,
+				100,
+				101,
+				102,
+				103,
+				104,
+				105,
+				106,
+				107,
+				108,
+				109,
+				110,
+				111,
+				112,
+				113,
+				114,
+				115,
+				116,
+				117,
+				118,
+				119,
+				120,
+				121,
+				122,
+				123,
+				124,
+				125,
+				126,
+				127,
+				128,
+				129,
+				130,
+				131,
+				132,
+				133
+			]
+		}
+	],
+	"dependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "libcurl_shared::@7349aeacaff41deceb36"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "cpr::@c4b08663df96993e8225"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "libcron::@12efd879dac1a18187fd"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "bcrypt::@19278b15613a4da0e446"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_optional::@c24bf7cf75772fb3436f"
+		}
+	],
+	"id" : "ether-media-server::@6890427a1f51a3e7e1df",
+	"link" : 
+	{
+		"commandFragments" : 
+		[
+			{
+				"fragment" : "-g",
+				"role" : "flags"
+			},
+			{
+				"fragment" : "",
+				"role" : "flags"
+			},
+			{
+				"fragment" : "-Wl,-rpath,/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/bcrypt-build:/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/libcron-src/libcron/out/Debug:/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/cpr-build/cpr:/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/curl-build/lib",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "-ltbb",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "_deps/bcrypt-build/libbcrypt.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "_deps/libcron-src/libcron/out/Debug/liblibcron.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "/usr/lib/libspdlog.so.1.17.0",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "_deps/cpr-build/cpr/libcpr.so.1.14.0",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "/usr/local/lib/libdrogon.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 7,
+				"fragment" : "/usr/lib/libavdevice.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 7,
+				"fragment" : "/usr/lib/libavfilter.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 7,
+				"fragment" : "/usr/lib/libavformat.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 7,
+				"fragment" : "/usr/lib/libavcodec.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 7,
+				"fragment" : "/usr/lib/libswresample.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 7,
+				"fragment" : "/usr/lib/libswscale.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 7,
+				"fragment" : "/usr/lib/libavutil.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 12,
+				"fragment" : "/usr/lib/libfmt.so.12.1.0",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 14,
+				"fragment" : "_deps/curl-build/lib/libcurl-d.so.4.8.0",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 19,
+				"fragment" : "/usr/local/lib/libtrantor.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 28,
+				"fragment" : "/usr/lib/libcares.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 31,
+				"fragment" : "-lpthread",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 19,
+				"fragment" : "-ldl",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 36,
+				"fragment" : "/usr/lib/libjsoncpp.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 19,
+				"fragment" : "-lyaml-cpp",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 41,
+				"fragment" : "/lib/libuuid.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 46,
+				"fragment" : "/usr/lib/libbrotlidec.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 46,
+				"fragment" : "/usr/lib/libbrotlienc.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 46,
+				"fragment" : "/usr/lib/libbrotlicommon.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 51,
+				"fragment" : "/usr/lib/libpq.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 19,
+				"fragment" : "/usr/lib/libmysqlclient_r.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 31,
+				"fragment" : "/usr/lib/libssl.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 31,
+				"fragment" : "/usr/lib/libcrypto.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 56,
+				"fragment" : "/usr/lib/libsqlite3.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 61,
+				"fragment" : "/usr/lib/libhiredis.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 19,
+				"fragment" : "/usr/lib/libz.so",
+				"role" : "libraries"
+			}
+		],
+		"language" : "CXX"
+	},
+	"linkLibraries" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "PkgConfig::LIBAV::@6890427a1f51a3e7e1df"
+		},
+		{
+			"backtrace" : 2,
+			"fragment" : "tbb"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_algorithm::@ea94240d380103da7f7a"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "BS_thread_pool::@6890427a1f51a3e7e1df"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "bcrypt::@19278b15613a4da0e446"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "libcron::@12efd879dac1a18187fd"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "spdlog::spdlog::@6890427a1f51a3e7e1df"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "cpr::@c4b08663df96993e8225"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "Drogon::Drogon::@6890427a1f51a3e7e1df"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "caches::@bdb08cd76a86f7c9291e"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "PkgConfig::LIBAV::@6890427a1f51a3e7e1df"
+		}
+	],
+	"name" : "ether-media-server",
+	"nameOnDisk" : "ether-media-server",
+	"paths" : 
+	{
+		"build" : ".",
+		"source" : "."
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Source Files",
+			"sourceIndexes" : 
+			[
+				0,
+				1,
+				2,
+				3,
+				4,
+				5,
+				6,
+				7,
+				8,
+				9,
+				10,
+				11,
+				12,
+				13,
+				14,
+				15,
+				16,
+				17,
+				18,
+				19,
+				20,
+				21,
+				22,
+				23,
+				24,
+				25,
+				26,
+				27,
+				28,
+				29,
+				30,
+				31,
+				32,
+				33,
+				34,
+				35,
+				36,
+				37,
+				38,
+				39,
+				40,
+				41,
+				42,
+				43,
+				44,
+				45,
+				46,
+				47,
+				48,
+				49,
+				50,
+				51,
+				52,
+				53,
+				54,
+				55,
+				56,
+				57,
+				58,
+				59,
+				60,
+				61,
+				62,
+				63,
+				64,
+				65,
+				66,
+				67,
+				68,
+				69,
+				70,
+				71,
+				72,
+				73,
+				74,
+				75,
+				76,
+				77,
+				78,
+				79,
+				80,
+				81,
+				82,
+				83,
+				84,
+				85,
+				86,
+				87,
+				88,
+				89,
+				90,
+				91,
+				92,
+				93,
+				94,
+				95,
+				96,
+				97,
+				98,
+				99,
+				100,
+				101,
+				102,
+				103,
+				104,
+				105,
+				106,
+				107,
+				108,
+				109,
+				110,
+				111,
+				112,
+				113,
+				114,
+				115,
+				116,
+				117,
+				118,
+				119,
+				120,
+				121,
+				122,
+				123,
+				124,
+				125,
+				126,
+				127,
+				128,
+				129,
+				130,
+				131,
+				132,
+				133
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "main.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "controllers/api_Auth.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "controllers/api_Enviroment.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "controllers/api_Items.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "controllers/api_Libraries.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "controllers/api_LibraryPaths.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "controllers/api_Stream.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "controllers/api_Users.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "filters/AuthFilter.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/AudioTracks.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/CreditAssignments.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/CreditLocalizations.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/CreditTypes.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/Credits.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/EventTypes.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/Events.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/ExternalIds.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/ExternalMediaItemIds.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/ExternalPeopleIds.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/Genders.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/GenreAssignments.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/GenreLocalizations.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/Genres.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/ImageTypes.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/Images.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/Languages.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/Libraries.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/LibraryAssignments.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/LibraryPaths.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/MediaItemCreditAssignments.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/MediaItemImageAssignments.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/MediaItemLibraryAssignments.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/MediaItemLocalizations.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/MediaItemLocalizedText.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/MediaItemRatings.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/MediaItemStreams.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/MediaItemTagAssignment.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/MediaItemTypes.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/MediaItems.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/MetadataProviders.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/People.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/PeopleLocalizations.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/Persons.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/PositionType.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/ProductionCompanies.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/ProductionCompanyAssignments.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/Sessions.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/StreamTypes.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/SubtitleTracks.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/TagLocalizations.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/Tags.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/Users.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "models/VideoTracks.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "utils/DBUtils.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "utils/EventUtils.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "utils/JsonUtils.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "utils/LibrarySettingsManager.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "utils/MediaItem.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "utils/MediaUtils.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "utils/MetaData.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "utils/RequestHeaderUtils.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "utils/ScheduleUtils.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "utils/SessionUtils.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "utils/TimeUtils.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "utils/UserSettingsManager.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "utils/Utils.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/BaseAPI.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/TMDBInstance.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/AggregateCastCredit.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/AggregateCrewCredit.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/BaseEpisode.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/Cacheable.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/CastCredit.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/CollectionDetails.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/CompanyDetails.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/Country.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/CreditJob.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/Credits.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/CrewCredit.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/EpisodeDetails.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/EpisodeMediaImages.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/Genre.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/Image.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/Language.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/MediaDetails.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/MediaImages.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/Movie.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/MovieCastCredit.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/MovieDetails.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/MovieExternalIds.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/MultiSeach.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/NetworkDetails.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/Page.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/PagedResult.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/PartialCompanyNetwork.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/PartialCountry.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/PartialCredits.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/PartialEpisode.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/PartialEpisodeMediaImages.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/PartialMediaDetails.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/PartialMediaImages.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/PartialMovieDetails.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/PartialSeason.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/PartialSeasonMediaImages.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/PartialTVDetails.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/PartialTVEpisodeCredits.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/PartialTVEpisodeExternalIds.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/PartialTVSeasonAggregateCredits.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/PartialTVSeriesAggregateCredits.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/Person.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/PersonDetails.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/PersonExternalIds.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/SearchPersonDetails.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/SeasonImages.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/SeasonMediaImages.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/TVEpisode.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/TVEpisodeCredits.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/TVEpisodeExternalIds.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/TVSeason.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/TVSeasonAggregateCredits.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/TVSeasonDetails.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/TVSeasonExternalIds.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/TVSeries.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/TVSeriesAggregateCredits.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/TVSeriesDetails.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/TVSeriesExternalIds.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/Video.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Models/Videos.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Endpoints/SearchMovie.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Endpoints/SearchPerson.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Endpoints/SearchTV.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Endpoints/TVSeason.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Endpoints/TVSeries.cc",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 63,
+			"compileGroupIndex" : 0,
+			"path" : "MetaDataAPI/TMDB/Utils/Utils.cc",
+			"sourceGroupIndex" : 0
+		}
+	],
+	"type" : "EXECUTABLE"
+}

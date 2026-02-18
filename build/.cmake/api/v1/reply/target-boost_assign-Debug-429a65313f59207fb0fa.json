@@ -1,0 +1,150 @@
+{
+	"abstract" : true,
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_link_libraries"
+		],
+		"files" : 
+		[
+			"build/_deps/boost-src/libs/assign/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 10,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 15,
+				"parent" : 0
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	},
+	"id" : "boost_assign::@38a3bf6402079a7a0c62",
+	"interfaceCompileDependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_array::@46e357405ca08fcdad21"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_move::@7afc92e35862dd42939c"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_mpl::@cff897d36277151590c6"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_preprocessor::@05bb09c3eb074836ef60"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_ptr_container::@a4d9f2ed7a873eb25497"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_range::@ca62b01dfbf41310166b"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_static_assert::@3bed1403c8623e791ab9"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_throw_exception::@83cb61eed02efd6dd30e"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_tuple::@a7135aedbca7bdd1c21f"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_type_traits::@904f217963657fb5504f"
+		}
+	],
+	"interfaceLinkLibraries" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_array::@46e357405ca08fcdad21"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_move::@7afc92e35862dd42939c"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_mpl::@cff897d36277151590c6"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_preprocessor::@05bb09c3eb074836ef60"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_ptr_container::@a4d9f2ed7a873eb25497"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_range::@ca62b01dfbf41310166b"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_static_assert::@3bed1403c8623e791ab9"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_throw_exception::@83cb61eed02efd6dd30e"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_tuple::@a7135aedbca7bdd1c21f"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_type_traits::@904f217963657fb5504f"
+		}
+	],
+	"name" : "boost_assign",
+	"paths" : 
+	{
+		"build" : "_deps/boost-build/libs/assign",
+		"source" : "build/_deps/boost-src/libs/assign"
+	},
+	"sources" : [],
+	"type" : "INTERFACE_LIBRARY"
+}

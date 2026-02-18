@@ -1,0 +1,118 @@
+{
+	"abstract" : true,
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_link_libraries"
+		],
+		"files" : 
+		[
+			"build/_deps/boost-src/libs/dynamic_bitset/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 10,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 15,
+				"parent" : 0
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	},
+	"id" : "boost_dynamic_bitset::@e49b31deec99f76aaeee",
+	"interfaceCompileDependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_container_hash::@07ce8717ec12edbed616"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_integer::@435345965e62ad8723ad"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_move::@7afc92e35862dd42939c"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_static_assert::@3bed1403c8623e791ab9"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_throw_exception::@83cb61eed02efd6dd30e"
+		}
+	],
+	"interfaceLinkLibraries" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_container_hash::@07ce8717ec12edbed616"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_integer::@435345965e62ad8723ad"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_move::@7afc92e35862dd42939c"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_static_assert::@3bed1403c8623e791ab9"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_throw_exception::@83cb61eed02efd6dd30e"
+		}
+	],
+	"name" : "boost_dynamic_bitset",
+	"paths" : 
+	{
+		"build" : "_deps/boost-build/libs/dynamic_bitset",
+		"source" : "build/_deps/boost-src/libs/dynamic_bitset"
+	},
+	"sources" : [],
+	"type" : "INTERFACE_LIBRARY"
+}

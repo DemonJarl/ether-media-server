@@ -1,0 +1,68 @@
+{
+	"abstract" : true,
+	"artifacts" : 
+	[
+		{
+			"path" : "/usr/bin/dot"
+		}
+	],
+	"backtrace" : 4,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_executable",
+			"_Doxygen_find_dot",
+			"find_package"
+		],
+		"files" : 
+		[
+			"/usr/share/cmake/Modules/FindDoxygen.cmake",
+			"build/_deps/cache-src/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 2,
+				"file" : 1,
+				"line" : 26,
+				"parent" : 0
+			},
+			{
+				"file" : 0,
+				"parent" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 959,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 888,
+				"parent" : 3
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	},
+	"id" : "Doxygen::dot::@bdb08cd76a86f7c9291e",
+	"imported" : true,
+	"name" : "Doxygen::dot",
+	"nameOnDisk" : "dot",
+	"paths" : 
+	{
+		"build" : "_deps/cache-build",
+		"source" : "build/_deps/cache-src"
+	},
+	"sources" : [],
+	"type" : "EXECUTABLE"
+}

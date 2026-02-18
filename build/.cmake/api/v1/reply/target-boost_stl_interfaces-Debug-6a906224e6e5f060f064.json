@@ -1,0 +1,70 @@
+{
+	"abstract" : true,
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_link_libraries"
+		],
+		"files" : 
+		[
+			"build/_deps/boost-src/libs/stl_interfaces/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 12,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 17,
+				"parent" : 0
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	},
+	"id" : "boost_stl_interfaces::@eb2c532184911b258c1b",
+	"interfaceCompileDependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		}
+	],
+	"interfaceLinkLibraries" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		}
+	],
+	"name" : "boost_stl_interfaces",
+	"paths" : 
+	{
+		"build" : "_deps/boost-build/libs/stl_interfaces",
+		"source" : "build/_deps/boost-src/libs/stl_interfaces"
+	},
+	"sources" : [],
+	"type" : "INTERFACE_LIBRARY"
+}

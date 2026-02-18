@@ -1,0 +1,94 @@
+{
+	"abstract" : true,
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_link_libraries"
+		],
+		"files" : 
+		[
+			"build/_deps/boost-src/libs/hash2/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 10,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 15,
+				"parent" : 0
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	},
+	"id" : "boost_hash2::@507387afd4520390f2a7",
+	"interfaceCompileDependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_container_hash::@07ce8717ec12edbed616"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_describe::@f5d43ea9a997d5a497fc"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_mp11::@697146cc71a8f8befc74"
+		}
+	],
+	"interfaceLinkLibraries" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_container_hash::@07ce8717ec12edbed616"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_describe::@f5d43ea9a997d5a497fc"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_mp11::@697146cc71a8f8befc74"
+		}
+	],
+	"name" : "boost_hash2",
+	"paths" : 
+	{
+		"build" : "_deps/boost-build/libs/hash2",
+		"source" : "build/_deps/boost-src/libs/hash2"
+	},
+	"sources" : [],
+	"type" : "INTERFACE_LIBRARY"
+}

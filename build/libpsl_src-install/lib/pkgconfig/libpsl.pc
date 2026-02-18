@@ -1,0 +1,9 @@
+prefix=/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/libpsl_src-install
+includedir=${prefix}/include
+libdir=${prefix}/lib
+
+Name: libpsl
+Description: Public Suffix List C library
+Version: 0.21.5
+Libs: -L${libdir} -lpsl -lidn2 -lunistring
+Cflags: -I${includedir}

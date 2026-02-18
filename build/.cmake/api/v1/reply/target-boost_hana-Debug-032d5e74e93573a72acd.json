@@ -1,0 +1,94 @@
+{
+	"abstract" : true,
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_link_libraries"
+		],
+		"files" : 
+		[
+			"build/_deps/boost-src/libs/hana/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 12,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 17,
+				"parent" : 0
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	},
+	"id" : "boost_hana::@3d892777c01091757e0a",
+	"interfaceCompileDependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_fusion::@6aa8cc659b2881f46500"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_mpl::@cff897d36277151590c6"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_tuple::@a7135aedbca7bdd1c21f"
+		}
+	],
+	"interfaceLinkLibraries" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_fusion::@6aa8cc659b2881f46500"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_mpl::@cff897d36277151590c6"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_tuple::@a7135aedbca7bdd1c21f"
+		}
+	],
+	"name" : "boost_hana",
+	"paths" : 
+	{
+		"build" : "_deps/boost-build/libs/hana",
+		"source" : "build/_deps/boost-src/libs/hana"
+	},
+	"sources" : [],
+	"type" : "INTERFACE_LIBRARY"
+}

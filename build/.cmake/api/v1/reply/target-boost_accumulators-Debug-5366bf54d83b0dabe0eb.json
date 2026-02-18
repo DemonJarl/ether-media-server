@@ -1,0 +1,214 @@
+{
+	"abstract" : true,
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_link_libraries"
+		],
+		"files" : 
+		[
+			"build/_deps/boost-src/libs/accumulators/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 10,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 15,
+				"parent" : 0
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	},
+	"id" : "boost_accumulators::@a1f74d245ba7ef1a8666",
+	"interfaceCompileDependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_array::@46e357405ca08fcdad21"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_circular_buffer::@7776384da1ed8679bc80"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_concept_check::@003dcddc9f513f5c8bfe"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_fusion::@6aa8cc659b2881f46500"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_iterator::@2647375738d072f43182"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_mpl::@cff897d36277151590c6"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_numeric_conversion::@393e189a047d8b5926bd"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_numeric_ublas::@c70f80431c2337be4278"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_parameter::@a7a11ecccce1e0d4f4d6"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_preprocessor::@05bb09c3eb074836ef60"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_range::@ca62b01dfbf41310166b"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_serialization::@6b9f1e975f10e47f9876"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_static_assert::@3bed1403c8623e791ab9"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_throw_exception::@83cb61eed02efd6dd30e"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_tuple::@a7135aedbca7bdd1c21f"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_type_traits::@904f217963657fb5504f"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_typeof::@1f9c5a85e3c6cd6bd331"
+		}
+	],
+	"interfaceLinkLibraries" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_array::@46e357405ca08fcdad21"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_circular_buffer::@7776384da1ed8679bc80"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_concept_check::@003dcddc9f513f5c8bfe"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_fusion::@6aa8cc659b2881f46500"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_iterator::@2647375738d072f43182"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_mpl::@cff897d36277151590c6"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_numeric_conversion::@393e189a047d8b5926bd"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_numeric_ublas::@c70f80431c2337be4278"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_parameter::@a7a11ecccce1e0d4f4d6"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_preprocessor::@05bb09c3eb074836ef60"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_range::@ca62b01dfbf41310166b"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_serialization::@6b9f1e975f10e47f9876"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_static_assert::@3bed1403c8623e791ab9"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_throw_exception::@83cb61eed02efd6dd30e"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_tuple::@a7135aedbca7bdd1c21f"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_type_traits::@904f217963657fb5504f"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_typeof::@1f9c5a85e3c6cd6bd331"
+		}
+	],
+	"name" : "boost_accumulators",
+	"paths" : 
+	{
+		"build" : "_deps/boost-build/libs/accumulators",
+		"source" : "build/_deps/boost-src/libs/accumulators"
+	},
+	"sources" : [],
+	"type" : "INTERFACE_LIBRARY"
+}

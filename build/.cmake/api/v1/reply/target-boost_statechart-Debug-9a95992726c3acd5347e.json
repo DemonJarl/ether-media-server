@@ -1,0 +1,150 @@
+{
+	"abstract" : true,
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_link_libraries"
+		],
+		"files" : 
+		[
+			"build/_deps/boost-src/libs/statechart/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 10,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 15,
+				"parent" : 0
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	},
+	"id" : "boost_statechart::@e220bac17403061582f0",
+	"interfaceCompileDependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_bind::@35e8f98cd40b480d156e"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_conversion::@480b69ec55abc4ed056b"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_detail::@07662fe906c1495940ba"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_function::@42b2cdd4845e692c0f86"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_mpl::@cff897d36277151590c6"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_smart_ptr::@c88f626c0f0c67e64ad5"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_static_assert::@3bed1403c8623e791ab9"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_thread::@0571f5ffef38e5273762"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_type_traits::@904f217963657fb5504f"
+		}
+	],
+	"interfaceLinkLibraries" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_bind::@35e8f98cd40b480d156e"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_conversion::@480b69ec55abc4ed056b"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_detail::@07662fe906c1495940ba"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_function::@42b2cdd4845e692c0f86"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_mpl::@cff897d36277151590c6"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_smart_ptr::@c88f626c0f0c67e64ad5"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_static_assert::@3bed1403c8623e791ab9"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_thread::@0571f5ffef38e5273762"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_type_traits::@904f217963657fb5504f"
+		}
+	],
+	"name" : "boost_statechart",
+	"paths" : 
+	{
+		"build" : "_deps/boost-build/libs/statechart",
+		"source" : "build/_deps/boost-src/libs/statechart"
+	},
+	"sources" : [],
+	"type" : "INTERFACE_LIBRARY"
+}

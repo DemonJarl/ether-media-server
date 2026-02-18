@@ -1,0 +1,70 @@
+{
+	"abstract" : true,
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_link_libraries"
+		],
+		"files" : 
+		[
+			"build/_deps/boost-src/libs/dll/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 37,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 38,
+				"parent" : 0
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	},
+	"id" : "boost_dll_boost_fs::@59c13ae6ce17102b4dec",
+	"interfaceCompileDependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_dll_base::@59c13ae6ce17102b4dec"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_filesystem::@bfb09f59da8919bb4a34"
+		}
+	],
+	"interfaceLinkLibraries" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_dll_base::@59c13ae6ce17102b4dec"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_filesystem::@bfb09f59da8919bb4a34"
+		}
+	],
+	"name" : "boost_dll_boost_fs",
+	"paths" : 
+	{
+		"build" : "_deps/boost-build/libs/dll",
+		"source" : "build/_deps/boost-src/libs/dll"
+	},
+	"sources" : [],
+	"type" : "INTERFACE_LIBRARY"
+}

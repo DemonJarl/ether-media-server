@@ -1,0 +1,190 @@
+{
+	"abstract" : true,
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_link_libraries"
+		],
+		"files" : 
+		[
+			"build/_deps/boost-src/libs/numeric/odeint/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 10,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 39,
+				"parent" : 0
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	},
+	"id" : "boost_numeric_odeint::@2ec4413c1beef80242f2",
+	"interfaceCompileDependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_compute::@d954efa4b983d7761c8d"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_fusion::@6aa8cc659b2881f46500"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_iterator::@2647375738d072f43182"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_math::@610f7ad7ef9be9b551c9"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_mpl::@cff897d36277151590c6"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_multi_array::@52b985d5479269998e62"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_numeric_ublas::@c70f80431c2337be4278"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_preprocessor::@05bb09c3eb074836ef60"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_range::@ca62b01dfbf41310166b"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_static_assert::@3bed1403c8623e791ab9"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_throw_exception::@83cb61eed02efd6dd30e"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_type_traits::@904f217963657fb5504f"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_units::@09920987b806873160c4"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_utility::@13b359269b9532f15b2e"
+		}
+	],
+	"interfaceLinkLibraries" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_compute::@d954efa4b983d7761c8d"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_fusion::@6aa8cc659b2881f46500"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_iterator::@2647375738d072f43182"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_math::@610f7ad7ef9be9b551c9"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_mpl::@cff897d36277151590c6"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_multi_array::@52b985d5479269998e62"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_numeric_ublas::@c70f80431c2337be4278"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_preprocessor::@05bb09c3eb074836ef60"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_range::@ca62b01dfbf41310166b"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_static_assert::@3bed1403c8623e791ab9"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_throw_exception::@83cb61eed02efd6dd30e"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_type_traits::@904f217963657fb5504f"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_units::@09920987b806873160c4"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_utility::@13b359269b9532f15b2e"
+		}
+	],
+	"name" : "boost_numeric_odeint",
+	"paths" : 
+	{
+		"build" : "_deps/boost-build/libs/numeric/odeint",
+		"source" : "build/_deps/boost-src/libs/numeric/odeint"
+	},
+	"sources" : [],
+	"type" : "INTERFACE_LIBRARY"
+}

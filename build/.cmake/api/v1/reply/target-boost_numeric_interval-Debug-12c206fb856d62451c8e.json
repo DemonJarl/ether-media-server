@@ -1,0 +1,78 @@
+{
+	"abstract" : true,
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_link_libraries"
+		],
+		"files" : 
+		[
+			"build/_deps/boost-src/libs/numeric/interval/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 10,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 15,
+				"parent" : 0
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	},
+	"id" : "boost_numeric_interval::@170630462b97eca53612",
+	"interfaceCompileDependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_detail::@07662fe906c1495940ba"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_logic::@c2cc0e3114612b6c3def"
+		}
+	],
+	"interfaceLinkLibraries" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_detail::@07662fe906c1495940ba"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_logic::@c2cc0e3114612b6c3def"
+		}
+	],
+	"name" : "boost_numeric_interval",
+	"paths" : 
+	{
+		"build" : "_deps/boost-build/libs/numeric/interval",
+		"source" : "build/_deps/boost-src/libs/numeric/interval"
+	},
+	"sources" : [],
+	"type" : "INTERFACE_LIBRARY"
+}

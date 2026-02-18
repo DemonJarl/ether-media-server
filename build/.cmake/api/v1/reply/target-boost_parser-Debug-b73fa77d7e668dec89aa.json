@@ -1,0 +1,78 @@
+{
+	"abstract" : true,
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_link_libraries"
+		],
+		"files" : 
+		[
+			"build/_deps/boost-src/libs/parser/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 13,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 18,
+				"parent" : 0
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	},
+	"id" : "boost_parser::@1774101169ccf98b111f",
+	"interfaceCompileDependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_hana::@3d892777c01091757e0a"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_type_index::@6aa7475d037465371202"
+		}
+	],
+	"interfaceLinkLibraries" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_hana::@3d892777c01091757e0a"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_type_index::@6aa7475d037465371202"
+		}
+	],
+	"name" : "boost_parser",
+	"paths" : 
+	{
+		"build" : "_deps/boost-build/libs/parser",
+		"source" : "build/_deps/boost-src/libs/parser"
+	},
+	"sources" : [],
+	"type" : "INTERFACE_LIBRARY"
+}

@@ -1,0 +1,741 @@
+{
+	"artifacts" : 
+	[
+		{
+			"path" : "_deps/boost-build/libs/cobalt/libboost_cobalt.so"
+		}
+	],
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_link_libraries",
+			"target_compile_definitions",
+			"target_compile_features"
+		],
+		"files" : 
+		[
+			"build/_deps/boost-src/libs/cobalt/CMakeLists.txt",
+			"build/_deps/boost-src/libs/asio/CMakeLists.txt",
+			"build/_deps/boost-src/libs/lexical_cast/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 33,
+				"parent" : 0
+			},
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 36,
+				"parent" : 2
+			},
+			{
+				"file" : 2
+			},
+			{
+				"command" : 1,
+				"file" : 2,
+				"line" : 15,
+				"parent" : 4
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 51,
+				"parent" : 2
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 47,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 85,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 65,
+				"parent" : 0
+			},
+			{
+				"command" : 3,
+				"file" : 0,
+				"line" : 69,
+				"parent" : 0
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	},
+	"compileDependencies" : 
+	[
+		{
+			"backtrace" : 7,
+			"id" : "boost_asio::@2c95fe3a48624767d706"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_callable_traits::@22517cd6c54f1f0cae3d"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_circular_buffer::@7776384da1ed8679bc80"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_endian::@3c11bd4f6c94053b150b"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_intrusive::@3e0af5c1af548a59ab8d"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_mp11::@697146cc71a8f8befc74"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_preprocessor::@05bb09c3eb074836ef60"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_smart_ptr::@c88f626c0f0c67e64ad5"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_static_string::@7ada4b90cf21275bc420"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_system::@88f8acc0de176ce32d14"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_throw_exception::@83cb61eed02efd6dd30e"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_variant2::@7801607b17d58cfeeea6"
+		}
+	],
+	"compileGroups" : 
+	[
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : "-g -std=c++23 -fPIC"
+				}
+			],
+			"defines" : 
+			[
+				{
+					"backtrace" : 8,
+					"define" : "BOOST_COBALT_DYN_LINK=1"
+				},
+				{
+					"backtrace" : 9,
+					"define" : "BOOST_COBALT_NO_LIB=1"
+				},
+				{
+					"backtrace" : 9,
+					"define" : "BOOST_COBALT_SOURCE=1"
+				},
+				{
+					"backtrace" : 7,
+					"define" : "BOOST_CONTAINER_DYN_LINK"
+				},
+				{
+					"backtrace" : 7,
+					"define" : "BOOST_CONTAINER_NO_LIB"
+				},
+				{
+					"backtrace" : 7,
+					"define" : "BOOST_CONTEXT_DYN_LINK="
+				},
+				{
+					"backtrace" : 7,
+					"define" : "BOOST_CONTEXT_EXPORT=EXPORT"
+				},
+				{
+					"backtrace" : 7,
+					"define" : "BOOST_CONTEXT_NO_LIB="
+				},
+				{
+					"backtrace" : 7,
+					"define" : "BOOST_DATE_TIME_DYN_LINK"
+				},
+				{
+					"backtrace" : 7,
+					"define" : "BOOST_DATE_TIME_NO_LIB"
+				},
+				{
+					"define" : "boost_cobalt_EXPORTS"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 0,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/cobalt/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/asio/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/align/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/assert/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/config/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/core/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/static_assert/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/throw_exception/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/system/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/variant2/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/mp11/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/winapi/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/predef/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/date_time/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/algorithm/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/array/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/bind/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/concept_check/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/preprocessor/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/type_traits/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/exception/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/smart_ptr/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/tuple/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/function/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/iterator/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/detail/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/fusion/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/container_hash/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/describe/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/function_types/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/mpl/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/utility/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/io/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/typeof/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/functional/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/optional/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/range/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/conversion/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/regex/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/unordered/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/lexical_cast/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/container/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/intrusive/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/move/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/numeric/conversion/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/tokenizer/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/context/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/pool/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/integer/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/callable_traits/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/circular_buffer/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/endian/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-src/libs/static_string/include"
+				}
+			],
+			"language" : "CXX",
+			"languageStandard" : 
+			{
+				"backtraces" : 
+				[
+					10,
+					7,
+					7,
+					7,
+					7,
+					7
+				],
+				"standard" : "23"
+			},
+			"sourceIndexes" : 
+			[
+				0,
+				1,
+				2,
+				3,
+				4,
+				5,
+				6
+			]
+		}
+	],
+	"dependencies" : 
+	[
+		{
+			"backtrace" : 7,
+			"id" : "boost_container::@c32b1d466a2a3774f8b2"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_context::@713694650cfe3e0a28ae"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_date_time::@66ea84c75316a41dd820"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_optional::@c24bf7cf75772fb3436f"
+		}
+	],
+	"id" : "boost_cobalt::@b466b41355e6c2bfd929",
+	"interfaceCompileDependencies" : 
+	[
+		{
+			"backtrace" : 7,
+			"id" : "boost_asio::@2c95fe3a48624767d706"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_callable_traits::@22517cd6c54f1f0cae3d"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_circular_buffer::@7776384da1ed8679bc80"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_endian::@3c11bd4f6c94053b150b"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_intrusive::@3e0af5c1af548a59ab8d"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_mp11::@697146cc71a8f8befc74"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_preprocessor::@05bb09c3eb074836ef60"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_smart_ptr::@c88f626c0f0c67e64ad5"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_static_string::@7ada4b90cf21275bc420"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_system::@88f8acc0de176ce32d14"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_throw_exception::@83cb61eed02efd6dd30e"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_variant2::@7801607b17d58cfeeea6"
+		}
+	],
+	"interfaceLinkLibraries" : 
+	[
+		{
+			"backtrace" : 7,
+			"id" : "boost_asio::@2c95fe3a48624767d706"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_callable_traits::@22517cd6c54f1f0cae3d"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_circular_buffer::@7776384da1ed8679bc80"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_endian::@3c11bd4f6c94053b150b"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_intrusive::@3e0af5c1af548a59ab8d"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_mp11::@697146cc71a8f8befc74"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_preprocessor::@05bb09c3eb074836ef60"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_smart_ptr::@c88f626c0f0c67e64ad5"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_static_string::@7ada4b90cf21275bc420"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_system::@88f8acc0de176ce32d14"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_throw_exception::@83cb61eed02efd6dd30e"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_variant2::@7801607b17d58cfeeea6"
+		}
+	],
+	"link" : 
+	{
+		"commandFragments" : 
+		[
+			{
+				"fragment" : "-shared",
+				"role" : "flags"
+			},
+			{
+				"fragment" : "-Wl,-rpath,/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-build/libs/date_time:/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-build/libs/container:/home/demonjarl/Studies/Diplom/MediaServer/ether-media-server/build/_deps/boost-build/libs/context",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 3,
+				"fragment" : "_deps/boost-build/libs/date_time/libboost_date_time.so.1.89.0",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 5,
+				"fragment" : "_deps/boost-build/libs/container/libboost_container.so.1.89.0",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 6,
+				"fragment" : "_deps/boost-build/libs/context/libboost_context.so.1.89.0",
+				"role" : "libraries"
+			}
+		],
+		"language" : "CXX"
+	},
+	"linkLibraries" : 
+	[
+		{
+			"backtrace" : 7,
+			"id" : "boost_asio::@2c95fe3a48624767d706"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_callable_traits::@22517cd6c54f1f0cae3d"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_circular_buffer::@7776384da1ed8679bc80"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_endian::@3c11bd4f6c94053b150b"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_intrusive::@3e0af5c1af548a59ab8d"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_mp11::@697146cc71a8f8befc74"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_preprocessor::@05bb09c3eb074836ef60"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_smart_ptr::@c88f626c0f0c67e64ad5"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_static_string::@7ada4b90cf21275bc420"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_system::@88f8acc0de176ce32d14"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_throw_exception::@83cb61eed02efd6dd30e"
+		},
+		{
+			"backtrace" : 7,
+			"id" : "boost_variant2::@7801607b17d58cfeeea6"
+		}
+	],
+	"name" : "boost_cobalt",
+	"nameOnDisk" : "libboost_cobalt.so",
+	"paths" : 
+	{
+		"build" : "_deps/boost-build/libs/cobalt",
+		"source" : "build/_deps/boost-src/libs/cobalt"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Source Files",
+			"sourceIndexes" : 
+			[
+				0,
+				1,
+				2,
+				3,
+				4,
+				5,
+				6
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "build/_deps/boost-src/libs/cobalt/src/detail/exception.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "build/_deps/boost-src/libs/cobalt/src/detail/util.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "build/_deps/boost-src/libs/cobalt/src/channel.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "build/_deps/boost-src/libs/cobalt/src/error.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "build/_deps/boost-src/libs/cobalt/src/main.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "build/_deps/boost-src/libs/cobalt/src/this_thread.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "build/_deps/boost-src/libs/cobalt/src/thread.cpp",
+			"sourceGroupIndex" : 0
+		}
+	],
+	"type" : "SHARED_LIBRARY"
+}

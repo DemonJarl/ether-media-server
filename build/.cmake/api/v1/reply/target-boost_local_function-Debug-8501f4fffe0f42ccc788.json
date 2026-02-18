@@ -1,0 +1,110 @@
+{
+	"abstract" : true,
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_link_libraries"
+		],
+		"files" : 
+		[
+			"build/_deps/boost-src/libs/local_function/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 10,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 15,
+				"parent" : 0
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	},
+	"id" : "boost_local_function::@7a063a97e2edc03d93e2",
+	"interfaceCompileDependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_mpl::@cff897d36277151590c6"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_preprocessor::@05bb09c3eb074836ef60"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_scope_exit::@806606babe84af465338"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_type_traits::@904f217963657fb5504f"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_typeof::@1f9c5a85e3c6cd6bd331"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_utility::@13b359269b9532f15b2e"
+		}
+	],
+	"interfaceLinkLibraries" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_mpl::@cff897d36277151590c6"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_preprocessor::@05bb09c3eb074836ef60"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_scope_exit::@806606babe84af465338"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_type_traits::@904f217963657fb5504f"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_typeof::@1f9c5a85e3c6cd6bd331"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_utility::@13b359269b9532f15b2e"
+		}
+	],
+	"name" : "boost_local_function",
+	"paths" : 
+	{
+		"build" : "_deps/boost-build/libs/local_function",
+		"source" : "build/_deps/boost-src/libs/local_function"
+	},
+	"sources" : [],
+	"type" : "INTERFACE_LIBRARY"
+}

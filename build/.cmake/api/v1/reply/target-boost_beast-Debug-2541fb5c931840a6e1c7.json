@@ -1,0 +1,222 @@
+{
+	"abstract" : true,
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_link_libraries"
+		],
+		"files" : 
+		[
+			"build/_deps/boost-src/libs/beast/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 147,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 150,
+				"parent" : 0
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	},
+	"id" : "boost_beast::@a508a4bb37ba76495e71",
+	"interfaceCompileDependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_asio::@2c95fe3a48624767d706"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_bind::@35e8f98cd40b480d156e"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_container::@c32b1d466a2a3774f8b2"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_container_hash::@07ce8717ec12edbed616"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_endian::@3c11bd4f6c94053b150b"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_intrusive::@3e0af5c1af548a59ab8d"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_logic::@c2cc0e3114612b6c3def"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_mp11::@697146cc71a8f8befc74"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_optional::@c24bf7cf75772fb3436f"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_preprocessor::@05bb09c3eb074836ef60"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_smart_ptr::@c88f626c0f0c67e64ad5"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_static_assert::@3bed1403c8623e791ab9"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_static_string::@7ada4b90cf21275bc420"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_system::@88f8acc0de176ce32d14"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_throw_exception::@83cb61eed02efd6dd30e"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_type_index::@6aa7475d037465371202"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_type_traits::@904f217963657fb5504f"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_winapi::@d6d3a768ae0fa2c71c1d"
+		}
+	],
+	"interfaceLinkLibraries" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_asio::@2c95fe3a48624767d706"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_bind::@35e8f98cd40b480d156e"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_container::@c32b1d466a2a3774f8b2"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_container_hash::@07ce8717ec12edbed616"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_endian::@3c11bd4f6c94053b150b"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_intrusive::@3e0af5c1af548a59ab8d"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_logic::@c2cc0e3114612b6c3def"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_mp11::@697146cc71a8f8befc74"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_optional::@c24bf7cf75772fb3436f"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_preprocessor::@05bb09c3eb074836ef60"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_smart_ptr::@c88f626c0f0c67e64ad5"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_static_assert::@3bed1403c8623e791ab9"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_static_string::@7ada4b90cf21275bc420"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_system::@88f8acc0de176ce32d14"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_throw_exception::@83cb61eed02efd6dd30e"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_type_index::@6aa7475d037465371202"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_type_traits::@904f217963657fb5504f"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_winapi::@d6d3a768ae0fa2c71c1d"
+		}
+	],
+	"name" : "boost_beast",
+	"paths" : 
+	{
+		"build" : "_deps/boost-build/libs/beast",
+		"source" : "build/_deps/boost-src/libs/beast"
+	},
+	"sources" : [],
+	"type" : "INTERFACE_LIBRARY"
+}

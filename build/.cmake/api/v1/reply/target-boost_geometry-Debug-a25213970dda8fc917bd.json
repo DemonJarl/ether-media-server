@@ -1,0 +1,300 @@
+{
+	"abstract" : true,
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_link_libraries"
+		],
+		"files" : 
+		[
+			"build/_deps/boost-src/libs/geometry/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 12,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 18,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 51,
+				"parent" : 0
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	},
+	"id" : "boost_geometry::@be50e1a3450d852b1b1c",
+	"interfaceCompileDependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_algorithm::@ea94240d380103da7f7a"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_any::@5546660400870d71c27e"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_array::@46e357405ca08fcdad21"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_concept_check::@003dcddc9f513f5c8bfe"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_crc::@0e33ee8c1bb1ff3d2bba"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_function_types::@f92394a4197404547b2d"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_graph::@2f935bf62f9d504e89aa"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_iterator::@2647375738d072f43182"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_lexical_cast::@d382a6f2b70f2bc9a4bc"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_math::@610f7ad7ef9be9b551c9"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_move::@7afc92e35862dd42939c"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_mpl::@cff897d36277151590c6"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_multiprecision::@574b505fdf65fc94ae44"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_numeric_conversion::@393e189a047d8b5926bd"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_program_options::@b183a910967c36b89731"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_qvm::@7875e880e212e6d7b7f7"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_range::@ca62b01dfbf41310166b"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_rational::@7b87e342a82979b27f5c"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_static_assert::@3bed1403c8623e791ab9"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_throw_exception::@83cb61eed02efd6dd30e"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_tokenizer::@4ecc8bc681f8f0447e72"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_tuple::@a7135aedbca7bdd1c21f"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_type_traits::@904f217963657fb5504f"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_utility::@13b359269b9532f15b2e"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_variant::@672d49c960c0662bc10a"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_container::@c32b1d466a2a3774f8b2"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_serialization::@6b9f1e975f10e47f9876"
+		}
+	],
+	"interfaceLinkLibraries" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_algorithm::@ea94240d380103da7f7a"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_any::@5546660400870d71c27e"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_array::@46e357405ca08fcdad21"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_concept_check::@003dcddc9f513f5c8bfe"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_crc::@0e33ee8c1bb1ff3d2bba"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_function_types::@f92394a4197404547b2d"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_graph::@2f935bf62f9d504e89aa"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_iterator::@2647375738d072f43182"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_lexical_cast::@d382a6f2b70f2bc9a4bc"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_math::@610f7ad7ef9be9b551c9"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_move::@7afc92e35862dd42939c"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_mpl::@cff897d36277151590c6"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_multiprecision::@574b505fdf65fc94ae44"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_numeric_conversion::@393e189a047d8b5926bd"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_program_options::@b183a910967c36b89731"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_qvm::@7875e880e212e6d7b7f7"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_range::@ca62b01dfbf41310166b"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_rational::@7b87e342a82979b27f5c"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_static_assert::@3bed1403c8623e791ab9"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_throw_exception::@83cb61eed02efd6dd30e"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_tokenizer::@4ecc8bc681f8f0447e72"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_tuple::@a7135aedbca7bdd1c21f"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_type_traits::@904f217963657fb5504f"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_utility::@13b359269b9532f15b2e"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_variant::@672d49c960c0662bc10a"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_container::@c32b1d466a2a3774f8b2"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_serialization::@6b9f1e975f10e47f9876"
+		}
+	],
+	"name" : "boost_geometry",
+	"paths" : 
+	{
+		"build" : "_deps/boost-build/libs/geometry",
+		"source" : "build/_deps/boost-src/libs/geometry"
+	},
+	"sources" : [],
+	"type" : "INTERFACE_LIBRARY"
+}

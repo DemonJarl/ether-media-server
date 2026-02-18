@@ -1,0 +1,213 @@
+{
+	"abstract" : true,
+	"backtrace" : 2,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"boost_test_add_included_library",
+			"target_link_libraries"
+		],
+		"files" : 
+		[
+			"build/_deps/boost-src/libs/test/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 102,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 92,
+				"parent" : 1
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 96,
+				"parent" : 1
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	},
+	"id" : "boost_included_unit_test_framework::@c979089153b483fbd201",
+	"interfaceCompileDependencies" : 
+	[
+		{
+			"backtrace" : 3,
+			"id" : "boost_algorithm::@ea94240d380103da7f7a"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_bind::@35e8f98cd40b480d156e"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_detail::@07662fe906c1495940ba"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_describe::@f5d43ea9a997d5a497fc"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_exception::@99a4a3f312800b24f965"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_function::@42b2cdd4845e692c0f86"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_io::@d429b055e4a3b1ce89bf"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_iterator::@2647375738d072f43182"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_mpl::@cff897d36277151590c6"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_numeric_conversion::@393e189a047d8b5926bd"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_optional::@c24bf7cf75772fb3436f"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_preprocessor::@05bb09c3eb074836ef60"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_smart_ptr::@c88f626c0f0c67e64ad5"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_static_assert::@3bed1403c8623e791ab9"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_type_traits::@904f217963657fb5504f"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_utility::@13b359269b9532f15b2e"
+		}
+	],
+	"interfaceLinkLibraries" : 
+	[
+		{
+			"backtrace" : 3,
+			"id" : "boost_algorithm::@ea94240d380103da7f7a"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_bind::@35e8f98cd40b480d156e"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_detail::@07662fe906c1495940ba"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_describe::@f5d43ea9a997d5a497fc"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_exception::@99a4a3f312800b24f965"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_function::@42b2cdd4845e692c0f86"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_io::@d429b055e4a3b1ce89bf"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_iterator::@2647375738d072f43182"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_mpl::@cff897d36277151590c6"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_numeric_conversion::@393e189a047d8b5926bd"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_optional::@c24bf7cf75772fb3436f"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_preprocessor::@05bb09c3eb074836ef60"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_smart_ptr::@c88f626c0f0c67e64ad5"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_static_assert::@3bed1403c8623e791ab9"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_type_traits::@904f217963657fb5504f"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "boost_utility::@13b359269b9532f15b2e"
+		}
+	],
+	"name" : "boost_included_unit_test_framework",
+	"paths" : 
+	{
+		"build" : "_deps/boost-build/libs/test",
+		"source" : "build/_deps/boost-src/libs/test"
+	},
+	"sources" : [],
+	"type" : "INTERFACE_LIBRARY"
+}

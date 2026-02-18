@@ -1,0 +1,76 @@
+{
+	"abstract" : true,
+	"backtrace" : 3,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"find_package",
+			"set_target_properties"
+		],
+		"files" : 
+		[
+			"/usr/share/cmake/Modules/FindOpenSSL.cmake",
+			"build/_deps/boost-src/libs/redis/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 105,
+				"parent" : 0
+			},
+			{
+				"file" : 0,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 802,
+				"parent" : 2
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 825,
+				"parent" : 2
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	},
+	"id" : "OpenSSL::SSL::@ab3a7de070cebb1560f6",
+	"imported" : true,
+	"interfaceCompileDependencies" : 
+	[
+		{
+			"backtrace" : 4,
+			"id" : "OpenSSL::Crypto::@ab3a7de070cebb1560f6"
+		}
+	],
+	"interfaceLinkLibraries" : 
+	[
+		{
+			"backtrace" : 4,
+			"id" : "OpenSSL::Crypto::@ab3a7de070cebb1560f6"
+		}
+	],
+	"local" : true,
+	"name" : "OpenSSL::SSL",
+	"paths" : 
+	{
+		"build" : "_deps/boost-build/libs/redis",
+		"source" : "build/_deps/boost-src/libs/redis"
+	},
+	"sources" : [],
+	"type" : "UNKNOWN_LIBRARY"
+}

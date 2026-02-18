@@ -1,0 +1,110 @@
+{
+	"abstract" : true,
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_link_libraries"
+		],
+		"files" : 
+		[
+			"build/_deps/boost-src/libs/multiprecision/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 11,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 28,
+				"parent" : 0
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	},
+	"id" : "boost_multiprecision::@574b505fdf65fc94ae44",
+	"interfaceCompileDependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_integer::@435345965e62ad8723ad"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_lexical_cast::@d382a6f2b70f2bc9a4bc"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_math::@610f7ad7ef9be9b551c9"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_random::@ddffb027e3570cd93ea8"
+		}
+	],
+	"interfaceLinkLibraries" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "boost_assert::@ca781959373d446383c8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_config::@8fd7e5fcb366bce5ccde"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_core::@9ce778423535102284e4"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_integer::@435345965e62ad8723ad"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_lexical_cast::@d382a6f2b70f2bc9a4bc"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_math::@610f7ad7ef9be9b551c9"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "boost_random::@ddffb027e3570cd93ea8"
+		}
+	],
+	"name" : "boost_multiprecision",
+	"paths" : 
+	{
+		"build" : "_deps/boost-build/libs/multiprecision",
+		"source" : "build/_deps/boost-src/libs/multiprecision"
+	},
+	"sources" : [],
+	"type" : "INTERFACE_LIBRARY"
+}

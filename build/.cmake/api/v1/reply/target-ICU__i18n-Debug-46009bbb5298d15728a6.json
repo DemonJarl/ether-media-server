@@ -1,0 +1,55 @@
+{
+	"abstract" : true,
+	"backtrace" : 3,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"find_package"
+		],
+		"files" : 
+		[
+			"/usr/share/cmake/Modules/FindICU.cmake",
+			"build/_deps/boost-src/libs/regex/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 36,
+				"parent" : 0
+			},
+			{
+				"file" : 0,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 418,
+				"parent" : 2
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 9
+	},
+	"id" : "ICU::i18n::@581c0f51b3ce05b0d2f8",
+	"imported" : true,
+	"local" : true,
+	"name" : "ICU::i18n",
+	"paths" : 
+	{
+		"build" : "_deps/boost-build/libs/regex",
+		"source" : "build/_deps/boost-src/libs/regex"
+	},
+	"sources" : [],
+	"type" : "UNKNOWN_LIBRARY"
+}
