@@ -12,11 +12,11 @@ namespace TMDBAPI::Endpoints
 
         this->includeAdult = includeAdult;
 
-        if (firstAirDateYear != 0 || (firstAirDateYear < 1000 && firstAirDateYear > 9999))
+        if (firstAirDateYear != 0 && (firstAirDateYear < 1000 || firstAirDateYear > 9999))
             throw std::invalid_argument("Год первого эфира должен быть между 1000 и 9999");
         this->firstAirDateYear = firstAirDateYear;
 
-        if (year != 0 || (year < 1000 && year > 9999))
+        if (year != 0 && (year < 1000 || year > 9999))
             throw std::invalid_argument("Год должен быть между 1000 и 9999");
         this->year = year;
         

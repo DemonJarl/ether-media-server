@@ -41,7 +41,7 @@ namespace TMDBAPI::Endpoints
         }
         void setFirstAirDateYear(const int firstAirDateYear)
         {
-            if (firstAirDateYear != 0 || (firstAirDateYear < 1000 && firstAirDateYear > 9999))
+            if (firstAirDateYear < 1000 || firstAirDateYear > 9999)
                 return;
             this->firstAirDateYear = firstAirDateYear;
         }
@@ -51,7 +51,7 @@ namespace TMDBAPI::Endpoints
         }
         void setYear(const int year)
         {
-            if (year != 0 || (year < 1000 && year > 9999))
+            if (year < 1000 || year > 9999)
                 return;
             this->year = year;
         }

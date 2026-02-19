@@ -1,6 +1,5 @@
 #include "MediaUtils.h"
 #include <algorithm>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -21,17 +20,12 @@
 #include <models/Libraries.h>
 #include <models/LibraryPaths.h>
 #include <models/MediaItems.h>
-#include <mutex>
 #include <optional>
 #include <regex>
 #include <stdexcept>
 #include <string>
 #include <trantor/utils/LockFreeQueue.h>
 #include <trantor/utils/Logger.h>
-#include <string_view>
-#include <unistd.h>
-#include <unordered_map>
-#include <utility>
 #include <vector>
 #include <array>
 #include "BS_thread_pool.hpp"
@@ -64,6 +58,8 @@
 #include "ProductionCompanies.h"
 #include "ProductionCompanyAssignments.h"
 #include "PeopleLocalizations.h"
+#include "SearchTV.hpp"
+#include "ServerSettingsManager.hpp"
 #include "TVEpisode.hpp"
 #include "TVEpisodeExternalIds.hpp"
 #include "TVSeason.hpp"
@@ -74,12 +70,14 @@
 #include "caches/fifo_cache_policy.hpp"
 #include "caches/lru_cache_policy.hpp"
 #include "EnumToInt.h"
-#include "MetaDataAPI/TMDB/Endpoints/SearchTV.hpp"
 #include "MetaDataAPI/TMDB/Models/TVSeries.hpp"
 #include "MetaDataAPI/TMDB/Endpoints/SearchMovie.hpp"
 #include "MetaDataAPI/TMDB/Endpoints/TVSeason.hpp"
 #include "MetaDataAPI/TMDB/Endpoints/TVEpisode.hpp"
 #include "MetaDataAPI/TMDB/Endpoints/Movie.hpp"
+#include "coro/mutex.hpp"
+#include "coro/sync_wait.hpp"
+#include "coro/task.hpp"
 #include "cpr/cprtypes.h"
 #include <format>
 extern "C" 
@@ -119,8 +117,7 @@ using lru_cache_t = typename caches::fixed_sized_cache<Key, Value, caches::FIFOC
 // Потестировать создание прогресс бара через websockets на nuxt
 
 
-std::mutex getParentMutex, findOrInsertPersonMutex, findOrInsertCreditMutex;
-std::counting_semaphore sem(60);
+coro::mutex getParentMutex, findOrInsertPersonMutex, findOrInsertCreditMutex;
 std::array<char, 4> badSymbols{'-', '.', ',', '|'};
 
 bool isNumber(const std::string &s) 
@@ -304,8 +301,8 @@ void scanLibrary(const models::Libraries& library, ScanMode mode, orm::DbClientP
     if (!dbPointer)
         dbPointer = drogon::app().getDbClient();
 
-    execSQL("PRAGMA journal_mode=WAL");
-    execSQL("PRAGMA busy_timeout=5000");
+    // execSQL("PRAGMA journal_mode=WAL");
+    // execSQL("PRAGMA busy_timeout=5000");
     //std::shared_ptr<orm::Transaction> transaction = dbClientPtr->newTransaction();
     //orm::Mapper<models::Libraries> mp(transaction);
     std::vector<models::LibraryPaths> paths{};
@@ -403,7 +400,6 @@ void scanLibrary(const models::Libraries& library, ScanMode mode, orm::DbClientP
 
     for (auto& path : paths)
     {
-        sem.acquire();
         //LOG_DEBUG<<"AAA!!!!!!!! "<<path.getValueOfPath();
         scanFutures.emplace_back(scanThreadPool.submit_task([&preExistingPaths, &scanSettings, &path](){
             scanPath(*path.getPath(), preExistingPaths, scanSettings, *path.getId());
@@ -413,13 +409,12 @@ void scanLibrary(const models::Libraries& library, ScanMode mode, orm::DbClientP
             future.wait();
         }
         scanFutures.clear();
-        sem.release();
     }
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     LOG_ERROR<<std::format("Закончили сканирование за {} сек", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()/1000000.0);
     return;
 }
-void analyzeFile(const fs::directory_entry& file, const LibraryScanSettings& scanSettings, const int64_t pathId)
+void analyzeFile(const fs::directory_entry& file, const LibraryScanSettings scanSettings, const int64_t pathId)
 {
     models::MediaItems item;
     auto path = file.path();
@@ -445,7 +440,7 @@ void analyzeFile(const fs::directory_entry& file, const LibraryScanSettings& sca
         item.setSeason(season);
         item.setMediaItemTypeId(enumToInt(MediaType::TVEpisode));
         item.setParsedName(std::format("{} S{}E{}",parsedSeriesTitle, season, episode));
-        std::optional<int64_t> parentID = getParentForEpisode(parsedSeriesTitle, season, "", scanSettings);
+        std::optional<int64_t> parentID = coro::sync_wait(getParentForEpisode(parsedSeriesTitle, season, "", scanSettings));
         if (!parentID.has_value())
         {
             LOG_ERROR<<std::format("Ошибка нахождения родителя для эпизода ТВ шоу {}", parsedSeriesTitle);
@@ -464,7 +459,7 @@ void analyzeFile(const fs::directory_entry& file, const LibraryScanSettings& sca
             avformat_close_input(&fmt_ctx); // важно!
             return;
         }
-        getTVEpisodeMetaData(scanSettings, item);
+        coro::sync_wait(getTVEpisodeMetaData(scanSettings, item));
     }
     else 
     {
@@ -483,48 +478,48 @@ void analyzeFile(const fs::directory_entry& file, const LibraryScanSettings& sca
             avformat_close_input(&fmt_ctx); // важно!
             return;
         }
-        getMovieMetaData(scanSettings, item);
+        coro::sync_wait(getMovieMetaData(scanSettings, item));
         // просто получить информацию о фильме
     }
     insertStreams(fmt_ctx->streams, fmt_ctx->nb_streams, item.getPrimaryKey());
-    assignMediaItemToLibraryByPath(item.getPrimaryKey(), path);
+    coro::sync_wait(assignMediaItemToLibraryByPath(item.getPrimaryKey(), path));
     avformat_close_input(&fmt_ctx); // важно!
     return;
 }
 
 
-void assignMediaItemToLibraryByPath(const int64_t mediaItemID, const std::string& path)
+coro::task<void> assignMediaItemToLibraryByPath(const int64_t mediaItemID, const std::string& path)
 {   
     try
     {
-        auto res = drogon::app().getDbClient()->execSqlSync("select library_paths.library_id from library_paths where instr($1, library_paths.path) = 1", path);
+        auto res = co_await drogon::app().getDbClient()->execSqlCoro("select library_paths.library_id from library_paths where instr($1, library_paths.path) = 1", path);
         if (res.size() == 0)
-            return;
+            co_return;
         for (auto id : res)
-            assignMediaItemToLibraryByID(mediaItemID, id["library_id"].as<int64_t>());
+            co_await assignMediaItemToLibraryByID(mediaItemID, id["library_id"].as<int64_t>());
     }
     catch (const drogon::orm::DrogonDbException& e)
     {
         LOG_ERROR<<"Ошибка назначения библиотеки по пути: "<<e.base().what();
-        return;
+        co_return;
     }
 }
 
-void assignMediaItemToLibraryByID(const int64_t mediaItemID, const int64_t libraryID)
+coro::task<void> assignMediaItemToLibraryByID(const int64_t mediaItemID, const int64_t libraryID)
 {
     try
     {
-        auto res = drogon::app().getDbClient()->execSqlSync("insert into media_item_library_assignments (media_item_id, library_id) values($1,$2)", mediaItemID, libraryID);
+        auto res = co_await drogon::app().getDbClient()->execSqlCoro("insert into media_item_library_assignments (media_item_id, library_id) values($1,$2)", mediaItemID, libraryID);
     }
     catch (const drogon::orm::DrogonDbException& e)
     {
         LOG_ERROR<<"Ошибка назначения библиотеки по ID: "<<e.base().what();
-        return;
+        co_return;
     }
 }
 
 
-void scanPath(const fs::path& path, const std::vector<std::string>& scanedPaths, const LibraryScanSettings& scanSettings, const int64_t pathId)
+void scanPath(const fs::path& path, const std::vector<std::string>& scanedPaths, const LibraryScanSettings scanSettings, const int64_t pathId)
 {
     LOG_DEBUG<<"scanPath "<<path.string();
     std::vector<std::future<void>> analyzisFutures{};
@@ -563,7 +558,7 @@ std::vector<fs::directory_entry> enumerateFiles(const std::string& path)
             ret.push_back(entry);
         }
     }
-    return std::move(ret);
+    return ret;
 }
 
 std::vector<fs::directory_entry> enumerateFiles(const std::vector<std::string>& paths)
@@ -575,7 +570,7 @@ std::vector<fs::directory_entry> enumerateFiles(const std::vector<std::string>& 
         ret.reserve(ret.size()+tmp.size());
         ret.insert(ret.end(), std::move_iterator(tmp.begin()), std::move_iterator(tmp.end()));
     }    
-    return std::move(ret);
+    return ret;
 }
 
 void insertStreams(AVStream** streams, uint streamCount, int64_t mediaItemID, orm::DbClientPtr dbPointer)
@@ -647,7 +642,7 @@ models::MediaItemStreams parseStream(AVStream& stream, int64_t mediaItemID)
     return ret;
 }
 
-bool getDataFromMetadataProviders(const LibraryScanSettings& scanSettings, const models::MediaItems& mediaItem)
+bool getDataFromMetadataProviders(const LibraryScanSettings scanSettings, const models::MediaItems& mediaItem)
 {
     MediaType type = static_cast<MediaType>(mediaItem.getValueOfMediaItemTypeId());
     bool parsed = false;
@@ -659,7 +654,7 @@ bool getDataFromMetadataProviders(const LibraryScanSettings& scanSettings, const
 }
 
 
-std::optional<int64_t> findSeasonMediaItemID(const std::string& seriesTitle, const int64_t season, const std::string& releaseDate, orm::DbClientPtr dbPointer)
+coro::task<std::optional<int64_t>> findSeasonMediaItemID(const std::string& seriesTitle, const int64_t season, const std::string& releaseDate, orm::DbClientPtr dbPointer)
 {
     LOG_DEBUG<<std::format("findSeasonMediaItemID({}, {}, {})", seriesTitle, season, releaseDate);
     if (!dbPointer)
@@ -667,7 +662,7 @@ std::optional<int64_t> findSeasonMediaItemID(const std::string& seriesTitle, con
     orm::Result result{nullptr};
     try
     {
-        result = dbPointer->execSqlSync(
+        result = co_await dbPointer->execSqlCoro(
             "select season.id as id from media_items as media_item\
             left join media_item_localizations as loc_text on media_item_id = media_item.id\
             inner join media_items as season on ( coalesce(season.season,0) = $1 and season.parent_id = media_item.id)\
@@ -683,19 +678,19 @@ std::optional<int64_t> findSeasonMediaItemID(const std::string& seriesTitle, con
         if (result.empty())
         {
             LOG_DEBUG<<"Не удалось найти сезон";
-            return {};
+            co_return {};
         }
-        return result[0]["id"].as<int64_t>();
+        co_return result[0]["id"].as<int64_t>();
     }
     catch (const drogon::orm::DrogonDbException& e)
     {
         LOG_ERROR<<"Ошибка запроса: "<<e.base().what();
-        return {};
+        co_return {};
     }
-    return {};
+    co_return {};
 }
 
-std::optional<int64_t> findShowMediaItemID(const std::string& seriesTitle, const std::string& releaseDate, orm::DbClientPtr dbPointer)
+coro::task<std::optional<int64_t>>  findShowMediaItemID(const std::string& seriesTitle, const std::string& releaseDate, orm::DbClientPtr dbPointer)
 {
     LOG_ERROR<<std::format("findShowMediaItemID({}, {})", seriesTitle, releaseDate);
 
@@ -704,7 +699,7 @@ std::optional<int64_t> findShowMediaItemID(const std::string& seriesTitle, const
     orm::Result result{nullptr};
     try
     {
-        result = dbPointer->execSqlSync(
+        result = co_await dbPointer->execSqlCoro(
             "select media_item.id as id from media_items as media_item\
             left join media_item_localizations as loc_text on media_item_id = media_item.id\
              where \
@@ -719,72 +714,73 @@ std::optional<int64_t> findShowMediaItemID(const std::string& seriesTitle, const
         if (result.empty())
         {
             LOG_ERROR<<std::format("Не нашли ТВ Шоу {}({})", seriesTitle, releaseDate);
-            return {};
+            co_return {};
         }
-        return result[0]["id"].as<int64_t>();
+        co_return result[0]["id"].as<int64_t>();
     }
     catch (const drogon::orm::DrogonDbException& e)
     {
         LOG_ERROR<<"Ошибка запроса: "<<e.base().what();
-        return {};
+        co_return {};
     }
-    return {};
+    co_return {};
 }
 
-std::optional<int64_t> findShowByExternalID(const std::vector<std::pair<std::string, MetaDataProvider>> exteranlIDs)
+coro::task<std::optional<int64_t>> findShowByExternalID(const std::vector<std::pair<std::string, MetaDataProvider>> exteranlIDs)
 {
-    return {};
+    co_return {};
 }
 
-std::optional<int64_t> findSeasonByExternalID(const std::vector<std::pair<std::string, MetaDataProvider>> exteranlIDs)
+coro::task<std::optional<int64_t>> findSeasonByExternalID(const std::vector<std::pair<std::string, MetaDataProvider>> exteranlIDs)
 {
-    return {};
+    co_return {};
 }
 
 // подумать что делать если несколько копий одной серии
-std::optional<int64_t> getParentForEpisode(const std::string& showTitle, const int season, const std::string& releaseDate, const LibraryScanSettings& scanSettings, orm::DbClientPtr dbPointer)
+coro::task<std::optional<int64_t>> getParentForEpisode(const std::string& showTitle, const int season, const std::string& releaseDate, const LibraryScanSettings scanSettings, orm::DbClientPtr dbPointer)
 {
-    std::lock_guard lockMutex(getParentMutex);
+    // std::lock_guard lockMutex(getParentMutex);
+    auto lock = co_await getParentMutex.scoped_lock();
     LOG_ERROR<<std::format("getParentForEpisode({}, {}, {})", showTitle, season, releaseDate);
     if (!dbPointer)
         dbPointer = drogon::app().getDbClient();
     if (season <= 0)
         std::invalid_argument("Сезон должен быть больше нуля");
     std::optional<int64_t> id;
-    id = findSeasonMediaItemID(showTitle, season, releaseDate, dbPointer);
+    id = co_await findSeasonMediaItemID(showTitle, season, releaseDate, dbPointer);
     if (id.has_value())
     {
         LOG_DEBUG<<std::format("Нашли родителя сезон({})[{}] для {}", season, *id, showTitle);
-        return id;
+        co_return id;
     }
     // если нету ищем шоу и создаем шоу
-    id = findShowMediaItemID(showTitle, releaseDate);
+    id = co_await findShowMediaItemID(showTitle, releaseDate);
     if (id.has_value())
     {
-        id = createTVSeasonMediaItem(scanSettings, *id, season, releaseDate);
+        id = co_await createTVSeasonMediaItem(scanSettings, *id, season, releaseDate);
         if (!id.has_value())
         {
             LOG_DEBUG<<std::format("Не смогли создать новый сезон для найденого сериала");
-            return {};
+            co_return {};
         }
         // getTVSeasonMetaData(scanSettings, *id, getMediaItemExternalID(*id));
-        return id;
+        co_return id;
     }
     // если нету то нужно создать и шоу и сезон
-    auto showID = createTVShowMediaItem(scanSettings, showTitle, releaseDate);
+    auto showID = co_await createTVShowMediaItem(scanSettings, showTitle, releaseDate);
     if (!showID.has_value())
     {
         LOG_ERROR<<std::format("showID пустой для {}",showTitle);
-        return {};
+        co_return {};
     }
 
-    id = createTVSeasonMediaItem(scanSettings, *showID, season, releaseDate);
+    id = co_await createTVSeasonMediaItem(scanSettings, *showID, season, releaseDate);
     if (!id.has_value())
     {
         LOG_DEBUG<<std::format("Не смогли создать новый сезон для созданого сериала");
-        return {};
+        co_return {};
     }
-    return id;
+    co_return id;
 }
 
 void parseFileName(const std::string& fileName, std::string& name, int& season, int& episode, int& year)
@@ -794,7 +790,7 @@ void parseFileName(const std::string& fileName, std::string& name, int& season, 
     bool isMovie = true;
     std::vector<std::string> splitString;
     std::string sep;
-    std::string str = std::move(cleanupFileNameCopy(fileName));
+    std::string str = cleanupFileNameCopy(fileName);
     std::for_each(str.begin(), str.end(), [&dotCount, &spaceCount](char ch){
         if (ch == '.')
         {
@@ -821,7 +817,7 @@ void parseFileName(const std::string& fileName, std::string& name, int& season, 
         std::string s = match[0].str();
         boost::trim(s);
         getSeasonEpisode(s, season, episode);
-        str = std::move(str.substr(0, str.find(s) - 1));
+        str = str.substr(0, str.find(s) - 1);
         isMovie = false;
     }
 
@@ -862,7 +858,7 @@ void parseFileName(const std::string& fileName, std::string& name, int& season, 
 }
 
 
-std::optional<models::MediaItems> createMediaItem(const LibraryScanSettings& scanSettings, MediaType type, int64_t parentID, const std::string& parsedTitle, const std::string& path, const int season, const int episode, const std::string& releaseDate, orm::DbClientPtr dbPointer)
+coro::task<std::optional<models::MediaItems>> createMediaItem(const LibraryScanSettings scanSettings, MediaType type, int64_t parentID, const std::string& parsedTitle, const std::string& path, const int season, const int episode, const std::string& releaseDate, orm::DbClientPtr dbPointer)
 {
     // std::lock_guard<std::mutex> lockMutex(createSeasonMutex);
     LOG_DEBUG<<std::format("CreateMediaItem({}, {}, {}, {}, {}, {})", enumToInt(type), parentID, parsedTitle, season, episode, releaseDate);
@@ -937,7 +933,7 @@ std::optional<models::MediaItems> createMediaItem(const LibraryScanSettings& sca
     try
     {   
         mp.insert(ret);
-        return ret;
+        co_return ret;
     }
     catch (const drogon::orm::UniqueViolation& e)
     {
@@ -946,54 +942,48 @@ std::optional<models::MediaItems> createMediaItem(const LibraryScanSettings& sca
     catch (const drogon::orm::DrogonDbException& e)
     {
         LOG_ERROR<<std::format("Ошибка запроса: {} CreateMediaItem({}, {}, {}, {}, {}, {})", e.base().what(),enumToInt(type), parentID, parsedTitle, season, episode, releaseDate);
-        return {};
+        co_return {};
     }
-    return {};
+    co_return {};
 }
 
-std::optional<int64_t> createTVShowMediaItem(const LibraryScanSettings& scanSettings, const std::string& parsedTitle, const std::string& releaseDate, orm::DbClientPtr dbPointer)
+coro::task<std::optional<int64_t>> createTVShowMediaItem(const LibraryScanSettings scanSettings, const std::string& parsedTitle, const std::string& releaseDate, orm::DbClientPtr dbPointer)
 {
     LOG_DEBUG<<std::format("createTVShowMediaItem: {}, {}", parsedTitle, releaseDate);
     if (!dbPointer)
         dbPointer = drogon::app().getDbClient();
 
-    std::optional<models::MediaItems> tvShow = createMediaItem(scanSettings, MediaType::TVShow, 0, parsedTitle, "", 0, 0, releaseDate);
+    std::optional<models::MediaItems> tvShow = co_await createMediaItem(scanSettings, MediaType::TVShow, 0, parsedTitle, "", 0, 0, releaseDate);
     if (!tvShow.has_value())
-        return {};
-    getTVShowMetaData(scanSettings, *tvShow);
-    return tvShow->getPrimaryKey();
+        co_return {};
+    co_await getTVShowMetaData(scanSettings, *tvShow);
+    co_return tvShow->getPrimaryKey();
 }
 
-std::optional<int64_t> createTVSeasonMediaItem(const LibraryScanSettings& scanSettings, const int64_t parentID, const int season,  const std::string& releaseDate, orm::DbClientPtr dbPointer)
+coro::task<std::optional<int64_t>> createTVSeasonMediaItem(const LibraryScanSettings scanSettings, const int64_t parentID, const int season,  const std::string& releaseDate, orm::DbClientPtr dbPointer)
 {
     if (!dbPointer)
        dbPointer = drogon::app().getDbClient();
 
-    std::optional<models::MediaItems> tvSeason = createMediaItem(scanSettings, MediaType::TVSeason, parentID, "", "", season, 0, releaseDate);
+    std::optional<models::MediaItems> tvSeason = co_await createMediaItem(scanSettings, MediaType::TVSeason, parentID, "", "", season, 0, releaseDate);
     if (!tvSeason.has_value())
-        return {};
-    getTVSeasonMetaData(scanSettings, *tvSeason, getMediaItemExternalID(parentID));
-    return tvSeason->getPrimaryKey();
+        co_return {};
+    co_await getTVSeasonMetaData(scanSettings, *tvSeason, co_await getMediaItemExternalID(parentID));
+    co_return tvSeason->getPrimaryKey();
 }
 
-std::vector<models::ExternalMediaItemIds> getMediaItemExternalID(const int64_t mediaItemID, orm::DbClientPtr dbPointer)
+coro::task<std::vector<models::ExternalMediaItemIds>> getMediaItemExternalID(const int64_t mediaItemID, orm::DbClientPtr dbPointer)
 {
     if (!dbPointer)
         dbPointer = drogon::app().getDbClient();
-    std::vector<models::ExternalMediaItemIds> ret{};
     orm::Mapper<models::MediaItems> mp(dbPointer);
-    try
-    {
-        ret = mp.findByPrimaryKey(mediaItemID).getExternalMediaItemIds(dbPointer);
-    }
-    catch (const drogon::orm::DrogonDbException& e)
-    {
-        LOG_ERROR<<"Ошибка запроса: "<<e.base().what();
-    }
-    return ret;
+    auto mediaItem = co_await findRecordByPrimaryKeyORM<models::MediaItems>(mediaItemID);
+    if (!mediaItem.has_value())
+        co_return {};
+    co_return (*mediaItem).getExternalMediaItemIds(dbPointer);    
 }
 
-std::vector<models::ExternalMediaItemIds> getShowExternalIDFromSeason(const int64_t seasonMediaItemID, orm::DbClientPtr dbPointer)
+coro::task<std::vector<models::ExternalMediaItemIds>>getShowExternalIDFromSeason(const int64_t seasonMediaItemID, orm::DbClientPtr dbPointer)
 {
     if (!dbPointer)
         dbPointer = drogon::app().getDbClient();
@@ -1008,14 +998,14 @@ std::vector<models::ExternalMediaItemIds> getShowExternalIDFromSeason(const int6
     {
         LOG_ERROR<<"Ошибка запроса: "<<e.base().what();
     }
-    return ret;
+    co_return ret;
 }
 
-std::vector<models::ExternalMediaItemIds> getMediaItemExternalID(const models::MediaItems& mediaItem, orm::DbClientPtr dbPointer)
+coro::task<std::vector<models::ExternalMediaItemIds>> getMediaItemExternalID(const models::MediaItems& mediaItem, orm::DbClientPtr dbPointer)
 {
     if (!dbPointer)
         dbPointer = drogon::app().getDbClient();
-    return mediaItem.getExternalMediaItemIds(dbPointer);
+    co_return mediaItem.getExternalMediaItemIds(dbPointer);
 }
 
 bool extIDInVec(const std::vector<models::ExternalMediaItemIds>& showExternalID, const MetaDataProvider provider, std::string& extID)
@@ -1038,7 +1028,7 @@ bool extIDInVec(const std::vector<models::ExternalMediaItemIds>& showExternalID,
     }
 }
 
-bool getTVSeasonMetaDataTMDB(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem, const int showID)
+coro::task<bool> getTVSeasonMetaDataTMDB(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem, const int showID)
 {
     bool parsed = false;
     int seasonNum = mediaItem.getValueOfSeason();
@@ -1047,18 +1037,16 @@ bool getTVSeasonMetaDataTMDB(const LibraryScanSettings& scanSettings, models::Me
     if (!seasonDetails.has_value())
     {
         LOG_ERROR<<std::format("seasonDetails.Error {}", enumToInt(seasonDetails.error()));
-        return parsed;
+        co_return parsed;
     }
     mediaItem.setReleaseDate((*seasonDetails).details.airDate);
     int64_t mediaItemID = mediaItem.getPrimaryKey();
     std::vector<std::future<bool>> futures;
-    futures.reserve(4);
+    futures.reserve(scanSettings.languagesToScanFor.size());
     auto tvSeasonExtIDs = TMDBAPI::Endpoints::TVSeries(showID).getExternalIDs();
     if (tvSeasonExtIDs.has_value())
     {
-        futures.emplace_back(metaDataThreadPool.submit_task([&tvSeasonExtIDs, mediaItemID]{
-            updateExtIds(*tvSeasonExtIDs, mediaItemID);
-            return false;}));
+        co_await updateExtIds(*tvSeasonExtIDs, mediaItemID);
     }
     Language originalLanguage = getOriginalLanguage(mediaItem.getValueOfParentId());
     // if (originalLanguage != Language::xx && !isElementInContainer(originalLanguage, scanSettings.languagesToScanFor))
@@ -1068,17 +1056,18 @@ bool getTVSeasonMetaDataTMDB(const LibraryScanSettings& scanSettings, models::Me
     // }
     for (const Language language : scanSettings.languagesToScanFor)
     {
-        futures.emplace_back(metaDataThreadPool.submit_task([&scanSettings, showID, seasonNum, mediaItemID, language, originalLanguage]{return getTVSeasonMetaDataTMDB(scanSettings, showID, seasonNum, mediaItemID, language, language == originalLanguage);}));
-
+        futures.emplace_back(metaDataThreadPool.submit_task([&scanSettings, showID, seasonNum, mediaItemID, language, originalLanguage]{
+            return coro::sync_wait(getTVSeasonMetaDataTMDB(scanSettings, showID, seasonNum, mediaItemID, language, language == originalLanguage));
+        }));
     }
     
-    updateRecord(mediaItem);
+    co_await updateRecord(mediaItem);
     for (auto& future : futures)
         parsed |= future.get();
-    return parsed;
+    co_return parsed;
 }
 
-bool getTVEpisodeMetaDataTMDB(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem, const int TMDBShowID)
+coro::task<bool> getTVEpisodeMetaDataTMDB(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem, const int TMDBShowID)
 {
     bool parsed = false;
     int season, episode;
@@ -1094,7 +1083,7 @@ bool getTVEpisodeMetaDataTMDB(const LibraryScanSettings& scanSettings, models::M
             
             auto tvSeasonDetails = TMDBAPI::Endpoints::TVSeries(TMDBShowID).getDetails();
             if (!tvSeasonDetails.has_value())
-                return false;
+                co_return false;
             auto seasonCount = (*tvSeasonDetails).details.seasons.size();
             // Значит промахнулись в меньшую сторону
             int newSeason = season + 1;
@@ -1107,22 +1096,22 @@ bool getTVEpisodeMetaDataTMDB(const LibraryScanSettings& scanSettings, models::M
                     episodeCount += (*tvSeasonDetails).details.seasons[i].episodeCount;
                 }
                 if (episodeCount < episode)
-                    return false;
+                    co_return false;
                 newEpisode = episodeCount - episode + 1;
                 mediaItem.setSeason(newSeason);
                 mediaItem.setEpisode(newEpisode);
                 std::string newName = mediaItem.getValueOfParsedName();
                 newName = newName.substr(0, newName.rfind('S') - 1);
                 LOG_ERROR<<std::format("new parsed name {}", newName);
-                auto newParent = getParentForEpisode(newName, newSeason, mediaItem.getValueOfReleaseDate(), scanSettings);
+                auto newParent = co_await getParentForEpisode(newName, newSeason, mediaItem.getValueOfReleaseDate(), scanSettings);
                 newName += std::format(" S{}E{}", newSeason, newEpisode);
                 LOG_ERROR<<std::format("new name {}", newName);
                 if (!newParent.has_value())
-                    return false;
+                    co_return false;
                 mediaItem.setParsedName(newName);
                 mediaItem.setParentId(*newParent);
-                if (!updateRecord(mediaItem))
-                    return false;
+                if (!co_await updateRecord(mediaItem))
+                    co_return false;
             }
             season = newSeason;
             episode = newEpisode;
@@ -1130,7 +1119,7 @@ bool getTVEpisodeMetaDataTMDB(const LibraryScanSettings& scanSettings, models::M
         else
         {
             LOG_ERROR<<std::format("episodeDetails.Error {}", enumToInt(episodeDetails.error()));
-            return parsed;
+            co_return parsed;
         }
     }
     int64_t mediaItemID = mediaItem.getPrimaryKey();
@@ -1139,9 +1128,7 @@ bool getTVEpisodeMetaDataTMDB(const LibraryScanSettings& scanSettings, models::M
     auto tvEpisodeExtIDs = TMDBAPI::Endpoints::TVEpisode(TMDBShowID, season, episode).getExternalIDs();
     if (tvEpisodeExtIDs.has_value())
     {
-        futures.emplace_back(metaDataThreadPool.submit_task([&tvEpisodeExtIDs, mediaItemID]{
-            updateExtIds(*tvEpisodeExtIDs, mediaItemID);
-            return false;}));
+        co_await updateExtIds(*tvEpisodeExtIDs, mediaItemID);
     }
     Language originalLanguage = getOriginalLanguage(mediaItem.getValueOfParentId());
     // if (originalLanguage != Language::xx && !isElementInContainer(originalLanguage, scanSettings.languagesToScanFor))
@@ -1152,14 +1139,16 @@ bool getTVEpisodeMetaDataTMDB(const LibraryScanSettings& scanSettings, models::M
     for (const Language language : scanSettings.languagesToScanFor)
     {
         // LOG_ERROR<<"AAAAAAAAAAAAA "<<enumToInt(language);
-        futures.emplace_back(metaDataThreadPool.submit_task([&scanSettings, TMDBShowID, season, episode, mediaItem, language, originalLanguage, mediaItemID]{return getTVEpisodeMetaDataTMDB(scanSettings, TMDBShowID, season, episode, mediaItemID, language, language == originalLanguage);}));
+        futures.emplace_back(metaDataThreadPool.submit_task([&scanSettings, TMDBShowID, season, episode, mediaItem, language, originalLanguage, mediaItemID]{
+            return coro::sync_wait(getTVEpisodeMetaDataTMDB(scanSettings, TMDBShowID, season, episode, mediaItemID, language, language == originalLanguage));
+        }));
     }
     for (auto& future : futures)
         parsed |= future.get();
-    return parsed;
+    co_return parsed;
 }
 
-bool getTVEpisodeMetaDataTMDB(const LibraryScanSettings& scanSettings, const int TMDBShowID, const int season, const int episode, const int64_t mediaItemID, const Language language, const bool original)
+coro::task<bool> getTVEpisodeMetaDataTMDB(const LibraryScanSettings scanSettings, const int TMDBShowID, const int season, const int episode, const int64_t mediaItemID, const Language language, const bool original)
 {
     std::vector<std::future<void>> futures;
     futures.reserve(3);
@@ -1172,22 +1161,14 @@ bool getTVEpisodeMetaDataTMDB(const LibraryScanSettings& scanSettings, const int
     if (!tvEpisodeDetails.has_value())
     {
         LOG_INFO<<std::format("Не удалось получить ТВ эпизода S{}E{} шоу с ID {} , ошибка {}", season, episode, TMDBShowID, enumToInt(tvEpisodeDetails.error()));
-        return false;
+        co_return false;
     }
-    futures.emplace_back(metaDataThreadPool.submit_task([&tvEpisodeDetails, mediaItemID, language, original]{
-        insertMediaItemLocalization(mediaItemID, language, tvEpisodeDetails->details.name, tvEpisodeDetails->details.overview, "", original);
-    }));
+    co_await insertMediaItemLocalization(mediaItemID, language, tvEpisodeDetails->details.name, tvEpisodeDetails->details.overview, "", original);
 
     if (tvEpisodeDetails->credits.has_value() && scanSettings.collectEpisodeCredits)
     {
-        if (!tvEpisodeDetails->credits->cast.empty())
-            futures.emplace_back(metaDataThreadPool.submit_task([&tvEpisodeDetails, mediaItemID, language]{
-                insertCredits(tvEpisodeDetails->credits->cast, language, mediaItemID);
-            }));
-        if (!tvEpisodeDetails->credits->crew.empty())
-            futures.emplace_back(metaDataThreadPool.submit_task([&tvEpisodeDetails, mediaItemID, language]{
-                insertCredits(tvEpisodeDetails->credits->crew, language, mediaItemID);
-            }));
+        co_await insertCredits(tvEpisodeDetails->credits->cast, language, mediaItemID);
+        co_await insertCredits(tvEpisodeDetails->credits->crew, language, mediaItemID);
     }
     //  if (!tvEpisodeDetails->details.crew.empty())
     //         futures.emplace_back(metaDataThreadPool.submit_task([&tvEpisodeDetails, mediaItemID, language]{
@@ -1208,19 +1189,16 @@ bool getTVEpisodeMetaDataTMDB(const LibraryScanSettings& scanSettings, const int
     // }
     if ((*tvEpisodeDetails).images.has_value())
     {
-        if ((*(*tvEpisodeDetails).images).stills.size() > 0 && !hasImage(mediaItemID, ImageType::Still, language))
-            futures.emplace_back(metaDataThreadPool.submit_task([language, &tvEpisodeDetails, &scanSettings, mediaItemID]{
-                LOG_INFO<<(*(*tvEpisodeDetails).images).stills[0].filePath;
-                insertImage(scanSettings, ImageType::Still, language, (*(*tvEpisodeDetails).images).stills[0].getImageLink(TMDBAPI::StillSize::Original), mediaItemID);
-            }));
+        if ((*(*tvEpisodeDetails).images).stills.size() > 0 && !(co_await hasImage(mediaItemID, ImageType::Still, language)))
+            co_await insertImage(scanSettings, ImageType::Still, language, (*(*tvEpisodeDetails).images).stills[0].getImageLink(TMDBAPI::StillSize::Original), mediaItemID);
     }
 
     for (auto& future : futures)
         future.wait();
-    return true;
+    co_return true;
 }
 
-bool getTVShowMetaDataTMDB(const LibraryScanSettings& scanSettings, const int TMDBid, const int64_t mediaItemID, const Language language, const bool original)
+coro::task<bool> getTVShowMetaDataTMDB(const LibraryScanSettings scanSettings, const int TMDBid, const int64_t mediaItemID, const Language language, const bool original)
 {
     LOG_DEBUG<<std::format("getTVShowMetaDataTMDB({}, {}, {})", TMDBid, mediaItemID, enumToInt(language));
 
@@ -1230,20 +1208,16 @@ bool getTVShowMetaDataTMDB(const LibraryScanSettings& scanSettings, const int TM
     if (!tvShowDetails.has_value())
     {
         LOG_INFO<<std::format("Не удалось получить ТВ шоу с ID {}, ошибка {}", TMDBid, enumToInt(tvShowDetails.error()));
-        return false;
+        co_return false;
     }
     
-    futures.emplace_back(metaDataThreadPool.submit_task([&tvShowDetails, mediaItemID, language, original]{
-        insertMediaItemLocalization(mediaItemID, language, tvShowDetails->details.name, tvShowDetails->details.overview, tvShowDetails->details.tagline, original);
-    }));
+    co_await insertMediaItemLocalization(mediaItemID, language, tvShowDetails->details.name, tvShowDetails->details.overview, tvShowDetails->details.tagline, original);
 
     if (tvShowDetails->credits.has_value() && scanSettings.collectShowCredits)
     {
         LOG_DEBUG<<std::format("aggregateCredits size: cast {}, crew {}", tvShowDetails->credits->cast.size(), tvShowDetails->credits->crew.size());
         if (!tvShowDetails->credits->cast.empty())
-            futures.emplace_back(metaDataThreadPool.submit_task([&tvShowDetails, mediaItemID, language]{
-                insertCredits(tvShowDetails->credits->cast, language, mediaItemID);
-            }));
+            co_await insertCredits(tvShowDetails->credits->cast, language, mediaItemID);
         // futures.emplace_back(metaDataThreadPool.submit_task([language, &tvShowDetails, &scanSettings, mediaItemID]{
             
         //     insertImage(scanSettings, ImageType::Poster, language, "https://image.tmdb.org/t/p/original"+(*tvShowDetails).details.posterPath, mediaItemID);
@@ -1257,47 +1231,32 @@ bool getTVShowMetaDataTMDB(const LibraryScanSettings& scanSettings, const int TM
     if ((*tvShowDetails).images.has_value())
     {
 
-        if ((*(*tvShowDetails).images).backdrops.size() > 0  && !hasImage(mediaItemID, ImageType::Background, language))
-            futures.emplace_back(metaDataThreadPool.submit_task([language, &tvShowDetails, &scanSettings, mediaItemID]{
-                LOG_INFO<<(*(*tvShowDetails).images).backdrops[0].filePath;
-
-                insertImage(scanSettings, ImageType::Background, language, (*(*tvShowDetails).images).backdrops[0].getImageLink(TMDBAPI::BackdropSize::Original), mediaItemID);
-            }));
-        if ((*(*tvShowDetails).images).posters.size() > 0  && !hasImage(mediaItemID, ImageType::Poster, language))
-            futures.emplace_back(metaDataThreadPool.submit_task([language, &tvShowDetails, &scanSettings, mediaItemID]{
-                LOG_INFO<<(*(*tvShowDetails).images).posters[0].filePath;
-
-                insertImage(scanSettings, ImageType::Poster, language, (*(*tvShowDetails).images).posters[0].getImageLink(TMDBAPI::PosterSize::Original), mediaItemID);
-            }));
+        if ((*(*tvShowDetails).images).backdrops.size() > 0  && !(co_await hasImage(mediaItemID, ImageType::Background, language)))
+                co_await insertImage(scanSettings, ImageType::Background, language, (*(*tvShowDetails).images).backdrops[0].getImageLink(TMDBAPI::BackdropSize::Original), mediaItemID);
+        if ((*(*tvShowDetails).images).posters.size() > 0  && !(co_await hasImage(mediaItemID, ImageType::Poster, language)))
+        {
+            co_await insertImage(scanSettings, ImageType::Poster, language, (*(*tvShowDetails).images).posters[0].getImageLink(TMDBAPI::PosterSize::Original), mediaItemID);
+        }
             
     }
 
     if (!tvShowDetails->details.genres.empty())
     {
-        futures.emplace_back(metaDataThreadPool.submit_task([mediaItemID, &tvShowDetails, language]{
-            for (const auto& genre : tvShowDetails->details.genres)
-            {
-                insertGenre(mediaItemID, MetaDataProvider::TMDB, std::to_string(genre.id), genre.name, language);
-            }
-        }));
+        for (auto& genre : (*tvShowDetails).details.genres)
+            co_await insertGenre(mediaItemID, MetaDataProvider::TMDB, std::to_string(genre.id), genre.name, language);
     }
 
     if (!tvShowDetails->details.productionCompanies.empty())
     {
-        futures.emplace_back(metaDataThreadPool.submit_task([mediaItemID, &tvShowDetails]{
-            for (const auto& company : tvShowDetails->details.productionCompanies)
-            {
-                insertProductionCompany(mediaItemID, company.name);
-            }
-        })
-        );
+        for (auto& company : (*tvShowDetails).details.productionCompanies)
+            co_await insertProductionCompany(mediaItemID, company.name);
     }
     for (auto& future : futures)
         future.wait();
-    return true;
+    co_return true;
 }
 
-bool getTVSeasonMetaDataTMDB(const LibraryScanSettings& scanSettings, const int TMDBShowID, const int TMDBSeasonID, const int64_t mediaItemID, const Language language, const bool original)
+coro::task<bool> getTVSeasonMetaDataTMDB(const LibraryScanSettings scanSettings, const int TMDBShowID, const int TMDBSeasonID, const int64_t mediaItemID, const Language language, const bool original)
 {
     LOG_DEBUG<<std::format("getTVSeasonMetaDataTMDB({}, {}, {}, {})", TMDBShowID, TMDBSeasonID, mediaItemID, enumToInt(language));
     std::vector<std::future<void>> futures;
@@ -1308,19 +1267,13 @@ bool getTVSeasonMetaDataTMDB(const LibraryScanSettings& scanSettings, const int 
     {
         //error
         LOG_ERROR<<std::format("seasonDetails.Error {}", enumToInt(seasonDetails.error()));
-        return false;
+        co_return false;
     }
-    futures.emplace_back(metaDataThreadPool.submit_task([&seasonDetails, mediaItemID, language, original]{
-        insertMediaItemLocalization(mediaItemID, language, seasonDetails->details.name, seasonDetails->details.overview, "", original);
-    }));
+    co_await insertMediaItemLocalization(mediaItemID, language, seasonDetails->details.name, seasonDetails->details.overview, "", original);
     if (seasonDetails->credits.has_value() && scanSettings.collectSeasonCredits)
     {
-        futures.emplace_back(metaDataThreadPool.submit_task([&seasonDetails, language, mediaItemID]{
-            insertCredits(seasonDetails->credits->crew, language, mediaItemID);
-        }));
-        futures.emplace_back(metaDataThreadPool.submit_task([&seasonDetails, language, mediaItemID]{
-            insertCredits(seasonDetails->credits->cast, language, mediaItemID);
-        }));
+        co_await insertCredits(seasonDetails->credits->crew, language, mediaItemID);
+        co_await insertCredits(seasonDetails->credits->cast, language, mediaItemID);
         // futures.emplace_back(metaDataThreadPool.submit_task([&seasonDetails, language, mediaItemID]{
         //     insertCredits(seasonDetails->credits->guestStars, language, mediaItemID);
         // }));
@@ -1328,17 +1281,15 @@ bool getTVSeasonMetaDataTMDB(const LibraryScanSettings& scanSettings, const int 
     // Подумать над локальными изображениями
     if ((*seasonDetails).images.has_value())
     {
-        if ((*(*seasonDetails).images).posters.size() > 0 && !hasImage(mediaItemID, ImageType::Poster, language))
-            futures.emplace_back(metaDataThreadPool.submit_task([language, &seasonDetails, &scanSettings, mediaItemID]{
-                insertImage(scanSettings, ImageType::Poster, language, (*(*seasonDetails).images).posters[0].getImageLink(TMDBAPI::PosterSize::Original), mediaItemID);
-            }));
+        if ((*(*seasonDetails).images).posters.size() > 0 && !(co_await hasImage(mediaItemID, ImageType::Poster, language)))
+            co_await insertImage(scanSettings, ImageType::Poster, language, (*(*seasonDetails).images).posters[0].getImageLink(TMDBAPI::PosterSize::Original), mediaItemID);
     }
     for (auto& future : futures)
         future.wait();
-    return true;
+    co_return true;
 }
 
-bool getMovieMetaDataTMDB(const LibraryScanSettings& scanSettings, const int TMDBid, const int64_t mediaItemID, const Language language, const bool original)
+coro::task<bool> getMovieMetaDataTMDB(const LibraryScanSettings scanSettings, const int TMDBid, const int64_t mediaItemID, const Language language, const bool original)
 {
     LOG_DEBUG<<std::format("getMovieMetaDataTMDB({}, {}, {})", TMDBid, mediaItemID, enumToInt(language));
     std::vector<std::future<void>> futures;
@@ -1349,46 +1300,34 @@ bool getMovieMetaDataTMDB(const LibraryScanSettings& scanSettings, const int TMD
     if (!movieDetails.has_value())
     {
         LOG_INFO<<std::format("Не удалось получить Фильм с ID {}, ошибка {}", TMDBid, enumToInt(movieDetails.error()));
-        return false;
+        co_return false;
     }
     futures.reserve(4);
-    futures.emplace_back(metaDataThreadPool.submit_task([&movieDetails, mediaItemID, language, original]{
-        insertMediaItemLocalization(mediaItemID, language, (*movieDetails).details.title, movieDetails->details.overview, movieDetails->details.tagline, original);
-    }));
+    co_await insertMediaItemLocalization(mediaItemID, language, (*movieDetails).details.title, movieDetails->details.overview, movieDetails->details.tagline, original);
 
     if ((*movieDetails).credits.has_value() && scanSettings.collectMovieCredits)
     {
-        futures.emplace_back(metaDataThreadPool.submit_task([&movieDetails, language, mediaItemID]{
-            insertCredits((*movieDetails).credits->crew, language, mediaItemID);
-        }));
-        futures.emplace_back(metaDataThreadPool.submit_task([&movieDetails, language, mediaItemID]{
-            insertCredits((*movieDetails).credits->cast, language, mediaItemID);
-        }));
+            co_await insertCredits((*movieDetails).credits->crew, language, mediaItemID);
+            co_await insertCredits((*movieDetails).credits->cast, language, mediaItemID);
         // futures.emplace_back(metaDataThreadPool.submit_task([&seasonDetails, language, mediaItemID]{
         //     insertCredits(seasonDetails->credits->guestStars, language, mediaItemID);
         // }));`
     }
     if ((*movieDetails).images.has_value())
     {
-        if ((*(*movieDetails).images).posters.size() > 0 && !hasImage(mediaItemID, ImageType::Poster, language))
-            futures.emplace_back(metaDataThreadPool.submit_task([language, &movieDetails, &scanSettings, mediaItemID]{
-                insertImage(scanSettings, ImageType::Poster, language, (*(*movieDetails).images).posters[0].getImageLink(TMDBAPI::PosterSize::Original), mediaItemID);
-            }));
-        if ((*(*movieDetails).images).logos.size() > 0 && !hasImage(mediaItemID, ImageType::Logo, language))
-            futures.emplace_back(metaDataThreadPool.submit_task([language, &movieDetails, &scanSettings, mediaItemID]{
-                insertImage(scanSettings, ImageType::Logo, language, (*(*movieDetails).images).logos[0].getImageLink(TMDBAPI::PosterSize::Original), mediaItemID);
-            }));
-        if ((*(*movieDetails).images).backdrops.size() > 0 && !hasImage(mediaItemID, ImageType::Background, language))
-            futures.emplace_back(metaDataThreadPool.submit_task([language, &movieDetails, &scanSettings, mediaItemID]{
-                insertImage(scanSettings, ImageType::Background, language, (*(*movieDetails).images).backdrops[0].getImageLink(TMDBAPI::PosterSize::Original), mediaItemID);
-            }));
+        if ((*(*movieDetails).images).posters.size() > 0 && !(co_await hasImage(mediaItemID, ImageType::Poster, language)))
+            co_await insertImage(scanSettings, ImageType::Poster, language, (*(*movieDetails).images).posters[0].getImageLink(TMDBAPI::PosterSize::Original), mediaItemID);
+        if ((*(*movieDetails).images).logos.size() > 0 && !(co_await hasImage(mediaItemID, ImageType::Logo, language)))
+            co_await insertImage(scanSettings, ImageType::Logo, language, (*(*movieDetails).images).logos[0].getImageLink(TMDBAPI::PosterSize::Original), mediaItemID);
+        if ((*(*movieDetails).images).backdrops.size() > 0 && !(co_await hasImage(mediaItemID, ImageType::Background, language)))
+            co_await insertImage(scanSettings, ImageType::Background, language, (*(*movieDetails).images).backdrops[0].getImageLink(TMDBAPI::PosterSize::Original), mediaItemID);
     }
     for (auto& future : futures)
         future.wait();
-    return true;
+    co_return true;
 }
 
-bool getMovieMetaDataTMDB(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem)
+coro::task<bool> getMovieMetaDataTMDB(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem)
 {
     bool parsed = false;
     auto search = TMDBAPI::Endpoints::SearchMovie(mediaItem.getValueOfParsedName(), scanSettings.includeAdult);
@@ -1399,12 +1338,12 @@ bool getMovieMetaDataTMDB(const LibraryScanSettings& scanSettings, models::Media
     if (!searchResults.has_value())
     {
         LOG_INFO<<std::format("Запрос {} вернул код ошибки {}", search.getQuery(), enumToInt(searchResults.error()));
-        return parsed;
+        co_return parsed;
     }
     if (searchResults->empty())
     {
         LOG_INFO<<std::format("по запросу {} не найдено результатов", search.getQuery());
-        return parsed;
+        co_return parsed;
     }
     // всегда берем первый результат
     auto searchResult = (*searchResults.value().begin()).results[0];
@@ -1414,13 +1353,6 @@ bool getMovieMetaDataTMDB(const LibraryScanSettings& scanSettings, models::Media
     std::vector<std::future<bool>> futures;
     futures.reserve(scanSettings.languagesToScanFor.size() + 2);
     // Безопасно потому что передаем аргументы по копии
-    auto movieExtIDs = TMDBAPI::Endpoints::Movie(TMDBid).getExternalIDs();
-    if (movieExtIDs.has_value())
-    {
-        futures.emplace_back(metaDataThreadPool.submit_task([&movieExtIDs, mediaItemID]{
-            updateExtIds(*movieExtIDs, mediaItemID);
-            return false;}));
-    }
     Language originalLanguage = TMDBLanguageToLanguage(TMDBAPI::strToLanguage(searchResult.originalLanguage));
     LOG_DEBUG<<std::format("Original language {}", enumToInt(originalLanguage));
     // mediaItem.setReleaseYear(searchResult.);
@@ -1430,60 +1362,70 @@ bool getMovieMetaDataTMDB(const LibraryScanSettings& scanSettings, models::Media
     //     }));
     for (const Language language : scanSettings.languagesToScanFor)
     {
-        futures.emplace_back(metaDataThreadPool.submit_task([&scanSettings, TMDBid, mediaItemID, language, originalLanguage]{
-           return getMovieMetaDataTMDB(scanSettings, TMDBid, mediaItemID, language, language == originalLanguage);
+        futures.emplace_back(metaDataThreadPool.submit_task([&scanSettings, TMDBid, mediaItemID, language, originalLanguage]
+        {
+           return  coro::sync_wait(getMovieMetaDataTMDB(scanSettings, TMDBid, mediaItemID, language, language == originalLanguage));
         }));
+    }
+    auto movieExtIDs = TMDBAPI::Endpoints::Movie(TMDBid).getExternalIDs();
+    if (movieExtIDs.has_value())
+    {
+        co_await updateExtIds(*movieExtIDs, mediaItemID);
     }
     for (auto& future : futures)
         parsed |= future.get();
-    updateRecord(mediaItem);
-    return parsed;
+    co_await updateRecord(mediaItem);
+    co_return parsed;
 }
 
 
 
-void updateExtIds(const TMDBAPI::Models::PersonExternalIds& extIDs, const int64_t personID)
+coro::task<void> updateExtIds(const TMDBAPI::Models::PersonExternalIds& extIDs, const int64_t personID)
 {
     // futures.emplace_back(threadPool.submit_task([&extIDs, personID]{insertPersonExternalID(personID, MetaDataProvider::TMDB, std::to_string(extIDs.id));}));
-    insertPersonExternalID(personID, MetaDataProvider::TMDB, std::to_string(extIDs.id));
+    co_await insertPersonExternalID(personID, MetaDataProvider::TMDB, std::to_string(extIDs.id));
     // if (!extIDs.imdbId.empty())
     //     futures.emplace_back(threadPool.submit_task([&extIDs, personID]{insertPersonExternalID(personID, MetaDataProvider::IMDB, extIDs.imdbId);}));
     // for (auto& future : futures)
     //     future.wait();
+    co_return;
 }
 
-void updateExtIds(const TMDBAPI::Models::MovieExternalIds& extIDs, const int64_t mediaItemID)
+coro::task<void> updateExtIds(const TMDBAPI::Models::MovieExternalIds& extIDs, const int64_t mediaItemID)
 {
     // futures.emplace_back(threadPool.submit_task([&]{insertMediaItemExternalID(mediaItemID, MetaDataProvider::TMDB, std::to_string(extIDs.id));}));
     // if (!extIDs.imdbId.empty())
     //     futures.emplace_back(threadPool.submit_task([&extIDs, mediaItemID]{insertMediaItemExternalID(mediaItemID, MetaDataProvider::IMDB, extIDs.imdbId);}));
-    insertMediaItemExternalID(mediaItemID, MetaDataProvider::TMDB, std::to_string(extIDs.id));
+    co_await insertMediaItemExternalID(mediaItemID, MetaDataProvider::TMDB, std::to_string(extIDs.id));
+    co_return;
 }
 
-void updateExtIds(const TMDBAPI::Models::TVSeasonExternalIds& extIDs, const int64_t mediaItemID)
+coro::task<void> updateExtIds(const TMDBAPI::Models::TVSeasonExternalIds& extIDs, const int64_t mediaItemID)
 {
     // futures.emplace_back(threadPool.submit_task([&]{insertMediaItemExternalID(mediaItemID, MetaDataProvider::TMDB, std::to_string(extIDs.id));}));
-    insertMediaItemExternalID(mediaItemID, MetaDataProvider::TMDB, std::to_string(extIDs.id));
+    co_await insertMediaItemExternalID(mediaItemID, MetaDataProvider::TMDB, std::to_string(extIDs.id));
+    co_return;
 }
 
-void updateExtIds(const TMDBAPI::Models::TVSeriesExternalIds& extIDs, const int64_t mediaItemID)
+coro::task<void> updateExtIds(const TMDBAPI::Models::TVSeriesExternalIds& extIDs, const int64_t mediaItemID)
 {
-    insertMediaItemExternalID(mediaItemID, MetaDataProvider::TMDB, std::to_string(extIDs.id));
+    co_await insertMediaItemExternalID(mediaItemID, MetaDataProvider::TMDB, std::to_string(extIDs.id));
 //     futures.emplace_back(threadPool.submit_task([&]{insertMediaItemExternalID(mediaItemID, MetaDataProvider::TMDB, std::to_string(extIDs.id));}));
 //     if (!extIDs.imdbId.empty())
 //         futures.emplace_back(threadPool.submit_task([&extIDs, mediaItemID]{insertMediaItemExternalID(mediaItemID, MetaDataProvider::IMDB, extIDs.imdbId);}));
 //     for (auto& future : futures)
 //         future.wait();
+    co_return;
 }
 
-void updateExtIds(const TMDBAPI::Models::TVEpisodeExternalIds& extIDs, const int64_t mediaItemID)
+coro::task<void> updateExtIds(const TMDBAPI::Models::TVEpisodeExternalIds& extIDs, const int64_t mediaItemID)
 {
-    insertMediaItemExternalID(mediaItemID, MetaDataProvider::TMDB, std::to_string(extIDs.id));
-    if (!extIDs.imdbId.empty())
-        insertMediaItemExternalID(mediaItemID, MetaDataProvider::IMDB, extIDs.imdbId);
+    co_await insertMediaItemExternalID(mediaItemID, MetaDataProvider::TMDB, std::to_string(extIDs.id));
+    co_await insertMediaItemExternalID(mediaItemID, MetaDataProvider::IMDB, extIDs.imdbId);
+    co_return;
 }
 
-bool getTVShowMetaDataTMDB(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem)
+coro::task<bool> getTVShowMetaDataTMDB(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem)
 {
     bool parsed = false;
 
@@ -1495,12 +1437,12 @@ bool getTVShowMetaDataTMDB(const LibraryScanSettings& scanSettings, models::Medi
     if (!searchResults.has_value())
     {
         LOG_INFO<<std::format("Запрос {} вернул код ошибки {}", search.getQuery(), enumToInt(searchResults.error()));
-        return parsed;
+        co_return parsed;
     }
     if (searchResults->empty())
     {
         LOG_INFO<<std::format("по запросу {} не найдено результатов", search.getQuery());
-        return parsed;
+        co_return parsed;
     }
     // всегда берем первый результат
     auto searchResult = (*searchResults.value().begin()).results[0];
@@ -1510,13 +1452,6 @@ bool getTVShowMetaDataTMDB(const LibraryScanSettings& scanSettings, models::Medi
         
     std::vector<std::future<bool>> futures;
     futures.reserve(scanSettings.languagesToScanFor.size() + 2);
-    auto tvShowExtIDs = TMDBAPI::Endpoints::TVSeries(TMDBid).getExternalIDs();
-    if (tvShowExtIDs.has_value())
-    {
-        futures.emplace_back(metaDataThreadPool.submit_task([&tvShowExtIDs, mediaItemID]{
-            updateExtIds(*tvShowExtIDs, mediaItemID);
-            return false;}));
-    }
     Language originalLanguage = TMDBLanguageToLanguage(TMDBAPI::strToLanguage(searchResult.originalLanguage));
     // LOG_DEBUG<<std::format("Original Language {}", enumToInt(originalLanguage));
     // mediaItem.setReleaseYear(searchResult.);
@@ -1526,22 +1461,29 @@ bool getTVShowMetaDataTMDB(const LibraryScanSettings& scanSettings, models::Medi
     //     }));
     for (const Language language : scanSettings.languagesToScanFor)
     {
-        futures.emplace_back(metaDataThreadPool.submit_task([&scanSettings, TMDBid, mediaItemID, language, originalLanguage]{
-           return getTVShowMetaDataTMDB(scanSettings, TMDBid, mediaItemID, language, language == originalLanguage);
-        }));
+        futures.emplace_back(metaDataThreadPool.submit_task([&scanSettings, TMDBid, mediaItemID, language, originalLanguage]
+        {
+           return coro::sync_wait(getTVShowMetaDataTMDB(scanSettings, TMDBid, mediaItemID, language, language == originalLanguage));
+        }
+        ));
     }
-    updateRecord(mediaItem);
+    auto tvShowExtIDs = TMDBAPI::Endpoints::TVSeries(TMDBid).getExternalIDs();
+    if (tvShowExtIDs.has_value())
+    {
+        co_await updateExtIds(*tvShowExtIDs, mediaItemID);
+    }
+    co_await updateRecord(mediaItem);
     for (auto& future : futures)
         parsed |= future.get();
-    return parsed;
+    co_return parsed;
 }
 
 
 
-bool getTVSeasonMetaData(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem, const std::vector<models::ExternalMediaItemIds>& showExternalIDs)
+coro::task<bool> getTVSeasonMetaData(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem, const std::vector<models::ExternalMediaItemIds>& showExternalIDs)
 {
     if (scanSettings.metaDataProvider == MetaDataProvider::Local)
-        return true;
+        co_return true;
 
     bool parsed = false;
     std::string extID{};
@@ -1549,67 +1491,37 @@ bool getTVSeasonMetaData(const LibraryScanSettings& scanSettings, models::MediaI
     if(hasFlag(scanSettings.metaDataProvider, MetaDataProvider::TMDB) && extIDInVec(showExternalIDs, MetaDataProvider::TMDB, extID))
     {
         LOG_ERROR<<std::format("Ищем сезон в TMDBAPI {}", extID);
-        parsed = getTVSeasonMetaDataTMDB(scanSettings, mediaItem, std::stoi(extID));
+        parsed = co_await getTVSeasonMetaDataTMDB(scanSettings, mediaItem, std::stoi(extID));
+        if (parsed)
+            co_return parsed;
     }
-    return parsed;
+    co_return parsed;
 }
 
-std::vector<int64_t> getAssignedGenres(const int64_t mediaItemID)
-{
-    auto assignments = getGenreAssignments(mediaItemID);
-    if (assignments.empty())
-        return {};
-    std::vector<int64_t> ret;
-    ret.reserve(assignments.size());
-    for (const auto& assignment : assignments)
-        ret.push_back(assignment.getValueOfGenreId());
-    return ret;
-}
-
-void copyGenres(const int64_t fromMediaItemID, const int64_t toMediaItemID)
-{
-    auto genres = getGenreAssignments(fromMediaItemID);
-    orm::Mapper<models::GenreAssignments> mp(app().getDbClient());
-    orm::Mapper<models::GenreAssignments> mp1(app().getDbClient());
-    models::GenreAssignments assignment;
-    for (auto& genre : genres)
-    {
-        if(isGenreAssigned(genre.getValueOfGenreId(), toMediaItemID))
-            continue;
-        genre.setMediaItemId(toMediaItemID);
-        insertRecord(genre, mp);
-    }
-
-}
-
-
-bool getTVShowMetaData(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem)
+coro::task<bool> getTVShowMetaData(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem)
 {
     if (scanSettings.metaDataProvider == MetaDataProvider::Local)
-        return true;
+        co_return true;
     bool parsed = false;
 
     // вынести в отдельную функцию
     if(hasFlag(scanSettings.metaDataProvider, MetaDataProvider::TMDB))
     {
         LOG_ERROR<<std::format("Ищем шоу в TMDBAPI {}", mediaItem.getValueOfParsedName());
-        parsed = getTVShowMetaDataTMDB(scanSettings, mediaItem);
+        parsed = co_await getTVShowMetaDataTMDB(scanSettings, mediaItem);
+        if (parsed)
+            co_return parsed;
     }
 
     if(hasFlag(scanSettings.metaDataProvider, MetaDataProvider::KinoPoisk))
     {
 
     }
-    return parsed;
+    co_return parsed;
 }
 
-std::optional<int64_t> findGenre(const MetaDataProvider provider, const std::string& extID, orm::DbClientPtr dbPointer)
-{
-    return findRecordByCriteria<models::Genres>(orm::Criteria(models::Genres::Cols::_origin, orm::CompareOperator::EQ, enumToInt(provider))
-                                                && orm::Criteria(models::Genres::Cols::_external_id, orm::CompareOperator::EQ, extID));
-}
 
-std::optional<int64_t> insertGenre(const MetaDataProvider provider, const std::string& extID, orm::DbClientPtr dbPointer)
+coro::task<std::optional<int64_t>> insertGenre(const MetaDataProvider provider, const std::string& extID, orm::DbClientPtr dbPointer)
 {
     if(!dbPointer)
         dbPointer = app().getDbClient();
@@ -1621,44 +1533,40 @@ std::optional<int64_t> insertGenre(const MetaDataProvider provider, const std::s
     try
     {
         mp.insert(genre);
-        return genre.getPrimaryKey();
+        co_return genre.getPrimaryKey();
     }
     catch (const drogon::orm::DrogonDbException& e)
     {
         LOG_ERROR<<"Ошибка запроса: "<<e.base().what();
-        return {};
+        co_return {};
     }
 }
 
-void insertGenre(const int64_t mediaItemID, const MetaDataProvider provider, const std::string& extID, const std::string& name, const Language language, orm::DbClientPtr dbPointer)
+coro::task<void> insertGenre(const int64_t mediaItemID, const MetaDataProvider provider, const std::string& extID, const std::string& name, const Language language, orm::DbClientPtr dbPointer)
 {
     LOG_DEBUG<<std::format("insertGenre({}, {}, {}, {}, {})", mediaItemID, enumToInt(provider), extID , name, enumToInt(language));
     if(!dbPointer)
         dbPointer = app().getDbClient();
-    std::optional<int64_t> genreID = findGenre(provider, extID, dbPointer);
+    std::optional<int64_t> genreID = co_await findGenre(provider, extID, dbPointer);
     if (!genreID.has_value())
     {
-        genreID = insertGenre(provider, extID, dbPointer);
+        genreID = co_await insertGenre(provider, extID, dbPointer);
         if (!genreID.has_value())
         {
-            return;
+            co_return;
         }
     }
-    auto future = metaDataThreadPool.submit_task([&language, &name, &genreID]{
-        insertGenreLocalization(*genreID, language, name);
-    });
-    metaDataThreadPool.detach_task([genreID, mediaItemID, dbPointer]{assignGenre(*genreID, mediaItemID, dbPointer);});
-
-    future.get();
-    return;
+    co_await insertGenreLocalization(*genreID, language, name);
+    co_await assignGenre(*genreID, mediaItemID, dbPointer);
+    co_return;
 }
 
-void insertGenreLocalization(const int64_t genreID, const Language language, const std::string& name, orm::DbClientPtr dbPointer)
+coro::task<void> insertGenreLocalization(const int64_t genreID, const Language language, const std::string& name, orm::DbClientPtr dbPointer)
 {
     if(!dbPointer)
         dbPointer = app().getDbClient();
-    if(isGenreLocalized(genreID, language, dbPointer))
-        return;
+    if(co_await isGenreLocalized(genreID, language, dbPointer))
+        co_return;
     orm::Mapper<models::GenreLocalizations> mp(dbPointer);
     models::GenreLocalizations genreLoc;
     genreLoc.setGenreId(genreID);
@@ -1671,15 +1579,17 @@ void insertGenreLocalization(const int64_t genreID, const Language language, con
     catch (const drogon::orm::DrogonDbException& e)
     {
         LOG_ERROR<<"Ошибка запроса: "<<e.base().what();
+        co_return;
     }
+    co_return;
 }
 
-bool assignGenre(const int64_t genreID, const int64_t mediaItemID, orm::DbClientPtr dbPointer)
+coro::task<bool> assignGenre(const int64_t genreID, const int64_t mediaItemID, orm::DbClientPtr dbPointer)
 {
     if(!dbPointer)
         dbPointer = app().getDbClient();
-    if (isGenreAssigned(genreID, mediaItemID, dbPointer))
-        return true;
+    if (co_await isGenreAssigned(genreID, mediaItemID, dbPointer))
+        co_return true;
     orm::Mapper<models::GenreAssignments> mp(dbPointer);
     models::GenreAssignments genreAssignment;
     genreAssignment.setGenreId(genreID);
@@ -1687,75 +1597,74 @@ bool assignGenre(const int64_t genreID, const int64_t mediaItemID, orm::DbClient
     try
     {
         mp.insert(genreAssignment);
-        return true;
+        co_return true;
     }
     catch (const drogon::orm::DrogonDbException& e)
     {
         LOG_ERROR<<"Ошибка запроса: "<<e.base().what();
-        return false;
+        co_return false;
     }
 }
 
-bool isGenreAssigned(const int64_t genreID, const int64_t mediaItemID, orm::DbClientPtr dbPointer)
+coro::task<bool> isGenreAssigned(const int64_t genreID, const int64_t mediaItemID, orm::DbClientPtr dbPointer)
 {
     if(!dbPointer)
         dbPointer = app().getDbClient();
-    return recordExists<models::GenreAssignments>(orm::Criteria(models::GenreAssignments::Cols::_genre_id, orm::CompareOperator::EQ, genreID)
+    co_return co_await recordExists<models::GenreAssignments>(orm::Criteria(models::GenreAssignments::Cols::_genre_id, orm::CompareOperator::EQ, genreID)
      && orm::Criteria(models::GenreAssignments::Cols::_media_item_id, orm::CompareOperator::EQ, mediaItemID), dbPointer);
 }
 
-bool getTVEpisodeMetaData(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem)
+coro::task<bool> getTVEpisodeMetaData(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem)
 {
     if (scanSettings.metaDataProvider == MetaDataProvider::Local)
-        return true;
+        co_return true;
     bool parsed = false;
     std::string extID{};
-    auto extIDs = getShowExternalIDFromSeason(mediaItem.getValueOfParentId());
+    auto extIDs = co_await getShowExternalIDFromSeason(mediaItem.getValueOfParentId());
     if (extIDs.empty())
-        return parsed;
+        co_return parsed;
     if (hasFlag(scanSettings.metaDataProvider, MetaDataProvider::TMDB) && extIDInVec(extIDs, MetaDataProvider::TMDB, extID))
     {
-        parsed = getTVEpisodeMetaDataTMDB(scanSettings, mediaItem, std::stoi(extID));
+        parsed = co_await getTVEpisodeMetaDataTMDB(scanSettings, mediaItem, std::stoi(extID));
+        if (parsed)
+            co_return parsed;
     }
-    return parsed;
+    co_return parsed;
 }
 
-bool getMovieMetaData(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem)
+coro::task<bool>  getMovieMetaData(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem)
 {
     if (scanSettings.metaDataProvider == MetaDataProvider::Local)
-        return true;
+        co_return true;
     bool parsed = false;
     if (hasFlag(scanSettings.metaDataProvider, MetaDataProvider::TMDB))
     {
         LOG_INFO<<std::format("Ищем фильм в TMDB {}", mediaItem.getValueOfParsedName());
-        parsed = getMovieMetaDataTMDB(scanSettings, mediaItem);
+        parsed = co_await getMovieMetaDataTMDB(scanSettings, mediaItem);
+        if (parsed)
+            co_return parsed;
     }
-    return parsed;
+    co_return parsed;
 }
 
-std::optional<int64_t> insertMediaItemLocalization(const int64_t mediaItemID, const Language language, const std::string& name, const std::string& description, const std::string& tagline, const bool original)
+coro::task<std::optional<int64_t>> insertMediaItemLocalization(const int64_t mediaItemID, const Language language, const std::string& name, const std::string& description, const std::string& tagline, const bool original)
 {
     LOG_DEBUG<<std::format("insertMediaItemLocalization({}, {}, {}, {}, {})", mediaItemID, enumToInt(language), name, description, tagline);
     auto dbPointer = drogon::app().getDbClient();
-    orm::Mapper<models::MediaItemLocalizations> mp(dbPointer);
     std::optional<models::MediaItemLocalizations> localization;
-    localization = findMediaItemLocalization(mediaItemID, language, dbPointer);
+    localization = co_await findMediaItemLocalization(mediaItemID, language, dbPointer);
     if (localization.has_value() && localization->getValueOfName() != name && localization->getValueOfDescription() != description && localization->getValueOfTagline() != tagline)
     {
         // localization->setMediaItemId(mediaItemID);
         localization->setName(name);
         localization->setDescription(description);
         localization->setTagline(tagline);
-        try
+        if (co_await updateRecord(*localization))
         {
-            mp.insert(*localization);
-            return localization->getPrimaryKey();
+            co_await updateMediaItemTimestamp(mediaItemID);
+            co_return (*localization).getPrimaryKey();
         }
-        catch (const drogon::orm::DrogonDbException& e)
-        {
-            LOG_ERROR<<"Ошибка запроса обновления: "<<e.base().what();
-            return {};
-        }
+        
     }
     else 
     {
@@ -1766,42 +1675,37 @@ std::optional<int64_t> insertMediaItemLocalization(const int64_t mediaItemID, co
         loc.setTagline(tagline);
         loc.setLanguageId(enumToInt(language));
         loc.setOriginal(original);
-        try
+        if ((co_await insertRecord(loc, dbPointer)).has_value())
         {
-            mp.insert(loc);
-            return loc.getPrimaryKey();
-        }
-        catch (const drogon::orm::DrogonDbException& e)
-        {
-            LOG_ERROR<<"Ошибка запроса вставки: "<<e.base().what();
-            return {};
+            co_await updateMediaItemTimestamp(mediaItemID);
+            co_return loc.getPrimaryKey();
         }
     }
-    updateMediaItemTimestamp(mediaItemID);
+    co_return {};
 }
 
-std::optional<models::MediaItemLocalizations> findMediaItemLocalization(const int64_t mediaItemID, const Language language, orm::DbClientPtr dbPointer)
+coro::task<std::optional<models::MediaItemLocalizations>> findMediaItemLocalization(const int64_t mediaItemID, const Language language, orm::DbClientPtr dbPointer)
 {
     if (!dbPointer)
         dbPointer = app().getDbClient();
     orm::Mapper<models::MediaItemLocalizations> mp(dbPointer);
     try
     {
-        return mp.findOne(orm::Criteria(models::MediaItemLocalizations::Cols::_media_item_id, orm::CompareOperator::EQ, mediaItemID)&&
+        co_return mp.findOne(orm::Criteria(models::MediaItemLocalizations::Cols::_media_item_id, orm::CompareOperator::EQ, mediaItemID)&&
                             orm::Criteria(models::MediaItemLocalizations::Cols::_language_id, orm::CompareOperator::EQ, enumToInt(language)));
     }
     catch (const drogon::orm::DrogonDbException& e)
     {
         LOG_ERROR<<"Ошибка запроса: "<<e.base().what();
-        return {};
+        co_return {};
     }
 }   
 
-std::optional<int64_t> insertMediaItemExternalID(const int64_t mediaItemID, const MetaDataProvider provider, const std::string& externalID)
+coro::task<std::optional<int64_t>> insertMediaItemExternalID(const int64_t mediaItemID, const MetaDataProvider provider, const std::string& externalID)
 {
     LOG_DEBUG<<std::format("insertMediaItemExternalID({}, {}, {})", mediaItemID, enumToInt(provider), externalID);
     if (externalID.empty())
-        return {};
+        co_return {};
     models::ExternalMediaItemIds extMediaItemIDs;
     orm::Mapper<models::ExternalMediaItemIds> mp(drogon::app().getDbClient());
     extMediaItemIDs.setMediaItemId(mediaItemID);
@@ -1810,46 +1714,27 @@ std::optional<int64_t> insertMediaItemExternalID(const int64_t mediaItemID, cons
     try
     {
         mp.insert(extMediaItemIDs);
-        updateMediaItemTimestamp(mediaItemID);
+        co_await updateMediaItemTimestamp(mediaItemID);
+        co_return extMediaItemIDs.getPrimaryKey();
     }
     catch (const drogon::orm::DrogonDbException& e)
     {
         LOG_ERROR<<"Не удалось вставить внешний id: "<<e.base().what();
-        return {};
+        co_return {};
     }
-    return {};
+    co_return {};
 }
 
-std::optional<int64_t> insertPerson(const std::string& dateOfBirth)
-{
-    // if (externalID.empty())
-    //     return {};
-    auto dbPointer = drogon::app().getDbClient();
-    models::People person;
-    orm::Mapper<models::People> mp(dbPointer);
-    person.setDateOfBirth(dateOfBirth);
-    try
-    {
-        mp.insert(person);
-    }
-    catch (const drogon::orm::DrogonDbException& e)
-    {
-        LOG_ERROR<<"Ошибка запроса: "<<e.base().what();
-        return {};
-    }
-    return {};
-}
-
-std::optional<int64_t> insertCredit(const int64_t personID, const CreditType creditType)
+coro::task<std::optional<int64_t>>  insertCredit(const int64_t personID, const CreditType creditType)
 {
     auto dbPointer = drogon::app().getDbClient();
-    return {};
+    co_return {};
 }
 
-std::optional<int64_t> insertCreditLocalization(const int64_t creditID, const Language language, const std::string& text)
+coro::task<std::optional<int64_t>> insertCreditLocalization(const int64_t creditID, const Language language, const std::string& text)
 {
     if (isCreditLocalized(creditID, language))
-        return {};
+        co_return {};
     orm::Mapper<models::CreditLocalizations> mp(drogon::app().getDbClient());
     try
     {
@@ -1858,55 +1743,54 @@ std::optional<int64_t> insertCreditLocalization(const int64_t creditID, const La
         creditLoc.setLanguageId(enumToInt(language));
         creditLoc.setText(text);
         mp.insert(creditLoc);
-        return creditLoc.getPrimaryKey();
+        co_return creditLoc.getPrimaryKey();
     }
     catch (const drogon::orm::DrogonDbException e)
     {
         LOG_ERROR<<"Ошибка запроса: "<<e.base().what();
-        return {};
+        co_return {};
     }
-    return {};
+    co_return {};
 }
 
-std::optional<int64_t> insertPersonExternalID(const int64_t personID, const MetaDataProvider provider, const std::string& externalID)
+coro::task<std::optional<int64_t>> insertPersonExternalID(const int64_t personID, const MetaDataProvider provider, const std::string& externalID)
 {
     LOG_DEBUG<<std::format("insertPersonExternalID({}, {}, {})", personID, enumToInt(provider), externalID);
     if (externalID.empty())
-        return {};
+        co_return {};
     models::ExternalPeopleIds extPersonIDs;
     extPersonIDs.setPersonId(personID);
     extPersonIDs.setMetadataProviderId(enumToInt(provider));
     extPersonIDs.setExternalId(externalID);
-    return insertRecord(extPersonIDs);
+    co_return co_await insertRecord(extPersonIDs);
 }
 
-std::optional<int64_t> findPerson(const MetaDataProvider provider, const std::string& externalID, orm::DbClientPtr dbPointer)
+coro::task<std::optional<int64_t>> findPerson(const MetaDataProvider provider, const std::string& externalID, orm::DbClientPtr dbPointer)
 {
     LOG_DEBUG<<std::format("findPerson({}, {})", enumToInt(provider), externalID);
     if (!dbPointer)
         dbPointer = app().getDbClient();
-    
     try
     {
-        auto result = dbPointer->execSqlSync("select people.id as id from people inner join external_people_ids extID on (extID.person_id = people.id and extID.metadata_provider_id = $1 and extID.external_id = $2)",
+        auto result = co_await dbPointer->execSqlCoro("select people.id as id from people inner join external_people_ids extID on (extID.person_id = people.id and extID.metadata_provider_id = $1 and extID.external_id = $2)",
         enumToInt(provider), externalID);    
         if (result.empty())
-            return {};
-        return result[0]["id"].as<int64_t>();
+            co_return {};
+        co_return result[0]["id"].as<int64_t>();
     }
     catch (const drogon::orm::DrogonDbException& e)
     {
         LOG_ERROR<<"Не удалось найти человека: "<<e.base().what();
-        return {};
+        co_return {};
     }
-    return {};
+    co_return {};
 }
 
 
-std::optional<int64_t> findPerson(const std::string& name, const Gender gender, orm::DbClientPtr dbPointer)
+coro::task<std::optional<int64_t>> findPerson(const std::string& name, const Gender gender, orm::DbClientPtr dbPointer)
 {
     if (name.empty())
-        return {};
+        co_return {};
 
     if (!dbPointer)
         dbPointer = drogon::app().getDbClient();
@@ -1914,22 +1798,21 @@ std::optional<int64_t> findPerson(const std::string& name, const Gender gender, 
     try
     {
         // ПОменять
-        auto result = dbPointer->execSqlSync("select person.id as id from people as person inner join people_localizations as loc where (loc.name = $1 and person.gender_id = $2 )limit 1", name, enumToInt(gender));
+        auto result = co_await dbPointer->execSqlCoro("select person.id as id from people as person inner join people_localizations as loc where (loc.name = $1 and person.gender_id = $2 )limit 1", name, enumToInt(gender));
 
         if (result.empty())
-            return {};
+            co_return {};
 
-        return result[0]["id"].as<int64_t>();
+        co_return result[0]["id"].as<int64_t>();
     }
     catch (const drogon::orm::DrogonDbException& e)
     {
         LOG_ERROR<<"Ошибка запроса: "<<e.base().what();
-        return {};
+        co_return {};
     }
-    return {};
+    co_return {};
 }
-
-std::optional<int64_t> findCredit(const std::string& role, const CreditType creditType)
+coro::task<std::optional<int64_t>> findCredit(const std::string& role, const CreditType creditType)
 {
     auto dbPointer = drogon::app().getDbClient();
     try 
@@ -1939,28 +1822,30 @@ std::optional<int64_t> findCredit(const std::string& role, const CreditType cred
     catch (const drogon::orm::DrogonDbException& e)
     {
         LOG_ERROR<<"Ошибка запроса: "<<e.base().what();
-        return {};
+        co_return {};
     }
-    return {};
+    co_return {};
 }
 
 
-std::optional<int64_t> findOrInsertPerson(const MetaDataProvider provider, const std::string& id, const Language language, const std::string& name)
+coro::task<std::optional<int64_t>> findOrInsertPerson(const MetaDataProvider provider, const std::string& id, const Language language, const std::string& name)
 {
     LOG_DEBUG<<std::format("findOrInsertPerson({}, {}, {}, {})", enumToInt(provider), id, enumToInt(language), name);
-    std::lock_guard lockFindOrInsertPerson(findOrInsertPersonMutex);
+    //std::lock_guard lockFindOrInsertPerson(findOrInsertPersonMutex);
+    auto lock = co_await findOrInsertPersonMutex.scoped_lock();
+    // coro::mutex
     auto dbPointer = app().getDbClient();
-    auto personID = findPerson(provider, id, dbPointer);
+    auto personID = co_await findPerson(provider, id, dbPointer);
     if (personID.has_value())
     {
         if (hasFlag(provider, MetaDataProvider::TMDB))
             metaDataThreadPool.detach_task([personID, id, language]{localizePersonTMDB(*personID, std::stoi(id), language);});
-        return personID;
+        co_return personID;
     }
-    return insertPerson(provider, id, language);
+    co_return co_await insertPerson(provider, id, language);
 }
 
-std::optional<int64_t> insertPerson(const MetaDataProvider provider, const std::string& id, const Language language)
+coro::task<std::optional<int64_t>> insertPerson(const MetaDataProvider provider, const std::string& id, const Language language)
 {
     if (id.empty())
         return {};
@@ -1977,7 +1862,7 @@ std::optional<int64_t> insertPerson(const MetaDataProvider provider, const std::
     }
 }
 
-std::optional<int64_t> insertPersonTMDB(const int id, const Language language)
+coro::task<std::optional<int64_t>> insertPersonTMDB(const int id, const Language language)
 {
     LOG_INFO<<std::format("insertPersonTMDB({})", id);
     TMDBAPI::Endpoints::People people(id);
@@ -1985,7 +1870,7 @@ std::optional<int64_t> insertPersonTMDB(const int id, const Language language)
     if (!details.has_value())
     {
         LOG_ERROR<<std::format("Не удалось выполнить запрос на получение человека с id({}) из TMDB API", id);
-        return {};
+        co_return {};
     }
     orm::Mapper<models::People> mp(app().getDbClient());
     try
@@ -1997,88 +1882,76 @@ std::optional<int64_t> insertPersonTMDB(const int id, const Language language)
         //person.setOriginalName(details->name);
         if (!details->details.profilePath.empty())
         {
-            auto imageID = CreateAndInsertImage(TMDBAPI::secureImageURL + "/" +details->details.profilePath, "/home/demonjarl/Studies/Diplom/MediaServer/images", ImageType::Portrait, language);
+            auto imageID = co_await CreateAndInsertImage(TMDBAPI::secureImageURL + "/" +details->details.profilePath, ServerSettingsManager::Instance().getImageSaveDirectory(), ImageType::Portrait, language);
             if (imageID)
                 person.setPortretId(*imageID);
         }
         mp.insert(person);
         int64_t ret = person.getPrimaryKey();
         // details->details.profilePath
-        insertPersonLocalization(ret, details->details.name, details->details.biography, language);
+        co_await insertPersonLocalization(ret, details->details.name, details->details.biography, language);
 
         // threadPool.detach_task([ret, id]{
         //     insertPersonExternalID(ret, MetaDataProvider::TMDB, std::to_string(id));
         // });
  
         if (details->externalIDs.has_value())
-            updateExtIds(*details->externalIDs, ret);
+            co_await updateExtIds(*details->externalIDs, ret);
         // threadPool.detach_task([id, ret]{
         //     localizePersonTMDB(ret, id);
         // });
-        return ret;
+        co_return ret;
     }
     catch (const drogon::orm::DrogonDbException& e)
     {
         LOG_ERROR<<"Ошибка вставки человека: "<<e.base().what();
-        return {};
+        co_return {};
     }
 }
 
 
-std::optional<int64_t> insertPersonLocalization(const int64_t personID, const std::string& name, const std::string& biography, const Language language)
+coro::task<std::optional<int64_t>> insertPersonLocalization(const int64_t personID, const std::string& name, const std::string& biography, const Language language)
 {
     LOG_DEBUG<<std::format("insertPersonLocalization()", personID, name, biography, enumToInt(language));
     if (name.empty())
-        return {};
-    try
+        co_return {};
+    auto personLoc = co_await findPersonLocalizationORM(personID, language);
+    if (personLoc.has_value())
     {
-        orm::Mapper<models::PeopleLocalizations> mp(app().getDbClient());
-        // if (isPersonLocalized(personID, language))
-        //     return {};
-        auto personLoc = findPersonLocalizationORM(personID, language);
-        if (personLoc.has_value())
-        {
-            bool diffName = personLoc->getValueOfName() != name;
-            bool diffBio = personLoc->getValueOfBiography() != biography;
-            if (!diffName && !diffBio)
-                return personLoc->getPrimaryKey();
-            if (diffName)
-                personLoc->setName(name);
-            if (diffBio)
-                personLoc->setBiography(biography);
-            mp.update(*personLoc);
-            return personLoc->getPrimaryKey();
-        }
-        models::PeopleLocalizations tmp;
-        //personLoc.reset();
-        //personLoc = models::PeopleLocalizations();
-        tmp.setPersonId(personID);
-        tmp.setName(name);
-        tmp.setBiography(biography);
-        tmp.setLanguageId(enumToInt(language));
-        mp.insert(tmp);
-        return tmp.getPrimaryKey();
+        bool diffName = personLoc->getValueOfName() != name;
+        bool diffBio = personLoc->getValueOfBiography() != biography;
+        if (!diffName && !diffBio)
+            co_return personLoc->getPrimaryKey();
+        if (diffName)
+            personLoc->setName(name);
+        if (diffBio)
+            personLoc->setBiography(biography);
+        co_await updateRecord(*personLoc);
+        co_return personLoc->getPrimaryKey();
     }
-    catch (const drogon::orm::DrogonDbException& e)
-    {
-        LOG_ERROR<<"Не удалось локализировать человека: "<<e.base().what();
-        return {};
-    }
+    models::PeopleLocalizations tmp;
+    //personLoc.reset();
+    //personLoc = models::PeopleLocalizations();
+    tmp.setPersonId(personID);
+    tmp.setName(name);
+    tmp.setBiography(biography);
+    tmp.setLanguageId(enumToInt(language));
+    co_return co_await insertRecord(tmp);
 }
 
-void localizePersonTMDB(const int64_t personID, const int id, const Language language)
+coro::task<void> localizePersonTMDB(const int64_t personID, const int id, const Language language)
 {
     LOG_DEBUG<<std::format("localizePersonTMDB({}, {}, {})", personID, id, enumToInt(language));
     auto dbPointer = app().getDbClient();
     
-    if (findPersonLocalizationORM(personID, language))
-        return;
+    if (co_await findPersonLocalizationORM(personID, language))
+        co_return;
     
     auto personDetails = TMDBAPI::Endpoints::People(id).getDetails(languageToTMDBLanguage(language));
     if (!personDetails.has_value())
     {
         LOG_ERROR<<std::format("personDetails error {}", enumToInt(personDetails.error()));
-        return;
+        co_return;
     }
     models::PeopleLocalizations loc;
     orm::Mapper<models::PeopleLocalizations> mp(dbPointer);
@@ -2086,151 +1959,120 @@ void localizePersonTMDB(const int64_t personID, const int id, const Language lan
     loc.setPersonId(personID);
     loc.setName(personDetails->details.name);
     loc.setBiography(personDetails->details.biography);
-    insertRecord(loc, mp);
+    co_await insertRecord(loc, mp);
 }
 
-std::optional<models::PeopleLocalizations> findPersonLocalizationORM(const int64_t personID, const Language language)
+coro::task<std::optional<models::PeopleLocalizations>> findPersonLocalizationORM(const int64_t personID, const Language language)
 {
     orm::Mapper<models::PeopleLocalizations> mp(app().getDbClient());
     try
     {
-        return findRecordByCriteriaORM<models::PeopleLocalizations>(orm::Criteria(models::PeopleLocalizations::Cols::_person_id, orm::CompareOperator::EQ, personID) &&
+        co_return co_await findRecordByCriteriaORM<models::PeopleLocalizations>(orm::Criteria(models::PeopleLocalizations::Cols::_person_id, orm::CompareOperator::EQ, personID) &&
                 orm::Criteria(models::PeopleLocalizations::Cols::_language_id, orm::CompareOperator::EQ, enumToInt(language)));
     }
     catch (const drogon::orm::DrogonDbException& e)
     {
         LOG_ERROR<<"Ошибка запроса: "<<e.base().what();
-        return {};
+        co_return {};
     }
 }
 
-void assignCredit(const int64_t creditID, const int64_t mediaItemID)
-{
-    models::CreditAssignments assignment;
-    assignment.setCreditId(creditID);
-    assignment.setMediaItemId(mediaItemID);
-    insertRecord(assignment);
-}
-
-std::optional<int64_t> insertCredit(const int64_t personID, const CreditType creditType, const MetaDataProvider origin, const std::string& externalID)
+coro::task<std::optional<int64_t>> insertCredit(const int64_t personID, const CreditType creditType, const MetaDataProvider origin, const std::string& externalID)
 {
     models::Credits credit;
     credit.setPersonId(personID);
     credit.setCreditTypeId(enumToInt(creditType));
     credit.setOrigin(enumToInt(origin));
     credit.setExternalId(externalID);
-    return insertRecord(credit);
+    co_return co_await insertRecord(credit);
 }
 
-std::optional<int64_t> insertCredit(const int64_t personID, const int64_t mediaItemID, const CreditType creditType, const MetaDataProvider origin, const std::string& externalID)
+coro::task<std::optional<int64_t>> insertCredit(const int64_t personID, const int64_t mediaItemID, const CreditType creditType, const MetaDataProvider origin, const std::string& externalID)
 {
     models::Credits credit;
     credit.setPersonId(personID);
     credit.setCreditTypeId(enumToInt(creditType));
     credit.setOrigin(enumToInt(origin));
     credit.setExternalId(externalID);
-    auto ret = insertRecord(credit);
+    auto ret = co_await insertRecord(credit);
     if (!ret.has_value())
-        return {};
-    assignCredit(*ret, mediaItemID);
-    return ret;
+        co_return {};
+    co_await assignCredit(*ret, mediaItemID);
+    co_return ret;
 }
 
-std::optional<int64_t> findOrInsertCredit(const int64_t mediaItemID, const int64_t personID, const CreditType type, const MetaDataProvider origin, const std::string& externalID)
+coro::task<std::optional<int64_t>> findOrInsertCredit(const int64_t mediaItemID, const int64_t personID, const CreditType type, const MetaDataProvider origin, const std::string& externalID)
 {
     LOG_DEBUG<<std::format("findOrInsertCredit({}, {}, {}, {}, {})", mediaItemID, personID, enumToInt(type), enumToInt(origin), externalID);
-    std::lock_guard lock(findOrInsertCreditMutex);
-    auto creditID = findCredit(origin, externalID);
+    //std::lock_guard lock(findOrInsertCreditMutex);
+    auto lock = co_await findOrInsertCreditMutex.scoped_lock();
+    auto creditID = co_await findCredit(origin, externalID);
     if (creditID.has_value())
     {
-        assignCredit(*creditID, mediaItemID);
-        return creditID;
+        co_await assignCredit(*creditID, mediaItemID);
+        co_return creditID;
     }
-    return insertCredit(personID, mediaItemID, type, origin, externalID);
+    co_return co_await insertCredit(personID, mediaItemID, type, origin, externalID);
 }
 
 
-void insertCredits(const std::vector<TMDBAPI::Models::CrewCredit>& crewCredits, const Language language, const int64_t mediaItemID)
+coro::task<void> insertCredits(const std::vector<TMDBAPI::Models::CrewCredit>& crewCredits, const Language language, const int64_t mediaItemID)
 {
 
     if (crewCredits.empty())
-        return;
+        co_return;
 
-    std::for_each(crewCredits.begin(), crewCredits.end(), [mediaItemID, language](auto& crew){
-        auto personID = findOrInsertPerson(MetaDataProvider::TMDB, std::to_string(crew.id), language, crew.name);
+    for (auto& crew : crewCredits)
+    {
+        auto personID = co_await findOrInsertPerson(MetaDataProvider::TMDB, std::to_string(crew.id), language, crew.name);
         if (!personID.has_value())
         {
             LOG_ERROR<<std::format("Не удалось найти или вставить человека с ID {}", crew.id);
-            return; 
+            continue; 
         }
-        auto creditID = findOrInsertCredit(mediaItemID, *personID, CreditType::Production, MetaDataProvider::TMDB, crew.creditID);
+        auto creditID = co_await findOrInsertCredit(mediaItemID, *personID, CreditType::Production, MetaDataProvider::TMDB, crew.creditID);
 
         if (!creditID.has_value())
         {
             LOG_INFO<<std::format("Не удалось найти или вставить credit {}", crew.creditID);
-            return;
+            continue;
         }
 
-        insertCreditLocalization(*creditID, language, crew.job);
+        co_await insertCreditLocalization(*creditID, language, crew.job);
         // for (const auto& job : crew.jobs)
         //     insertCreditLocalization(*creditID, language, job.value);
-    });
-    // auto futureCrew = threadPool.submit_loop(0, crewCredits.size(), [&crewCredits, mediaItemID, language](size_t ind){
-    //     const auto& crew = crewCredits[ind];
-    //     auto personID = findOrInsertPerson(MetaDataProvider::TMDB, std::to_string(crew.id), language, crew.name);
-    //     if (!personID.has_value())
-    //     {
-    //         LOG_ERROR<<std::format("Не удалось найти или вставить человека с ID {}", crew.id);
-    //         return; 
-    //     }
-    //     auto creditID = findCredit(*personID, mediaItemID, CreditType::Production);
-    //     // for (const auto& job : crew.jobs)
-    //     // {
-            
-    //     // }
-    //     // Проверять если локализации?
-    //     if (!creditID.has_value())
-    //         creditID = insertCredit(*personID, mediaItemID, CreditType::Production);
-        
-    //     if (!creditID.has_value())
-    //     {
-    //         // лог
-    //         LOG_ERROR<<std::format("Не удалось вставить Credit");
-    //         return;
-    //     }
-    //     insertCreditLocalization(*creditID, language, crew.job);
-    //     // for (const auto& job : crew.jobs)
-    //     //     insertCreditLocalization(*creditID, language, job.value);
-    // });
-    // futureCrew.wait();
-    return;
+    }
+    co_return;
 }
 
 
 
-void insertCredits(const std::vector<TMDBAPI::Models::CastCredit>& castCredits, const Language language, const int64_t mediaItemID)
+
+
+coro::task<void> insertCredits(const std::vector<TMDBAPI::Models::CastCredit>& castCredits, const Language language, const int64_t mediaItemID)
 {
 
     if (castCredits.empty())
-        return;
+        co_return;
 
-    std::for_each(castCredits.begin(), castCredits.end(), [mediaItemID, language](auto& cast){
-        auto personID = findOrInsertPerson(MetaDataProvider::TMDB, std::to_string(cast.id), language, cast.name);
+    for (auto& cast : castCredits)
+    {
+        auto personID = co_await findOrInsertPerson(MetaDataProvider::TMDB, std::to_string(cast.id), language, cast.name);
         if (!personID.has_value())
         {
             LOG_ERROR<<std::format("Не удалось найти или вставить человека с ID {}", cast.id);
-            return; 
+            continue; 
         }
-        auto creditID = findOrInsertCredit(mediaItemID, *personID, CreditType::Actor, MetaDataProvider::TMDB, cast.creditID);
-       
+        auto creditID = co_await findOrInsertCredit(mediaItemID, *personID, CreditType::Actor, MetaDataProvider::TMDB, cast.creditID);
+        
         if (!creditID.has_value())
         {
             LOG_INFO<<std::format("Не удалось найти или вставить credit {}", cast.creditID);
-            return;
+            continue;
         }
         
-        insertCreditLocalization(*creditID, language, cast.character);
-    });
+        co_await insertCreditLocalization(*creditID, language, cast.character);
+    }
     // auto futureCast = threadPool.submit_loop(0, castCredits.size(), [&castCredits, mediaItemID, language](size_t ind){
     //     const auto& cast = castCredits[ind];
     //     auto personID = findOrInsertPerson(MetaDataProvider::TMDB, std::to_string(cast.id), language, cast.name);
@@ -2260,257 +2102,206 @@ void insertCredits(const std::vector<TMDBAPI::Models::CastCredit>& castCredits, 
     //     // }
     // });
     // futureCast.get();
-    return;
+    co_return;
 }
 
-std::optional<int64_t> findGenre(const std::string& name)
+coro::task<std::optional<int64_t>> findGenre(const std::string& name)
 {
     orm::Mapper<models::GenreLocalizations> mp(app().getDbClient());
     try
     {
         auto genreLoc = mp.findBy(orm::Criteria(models::GenreLocalizations::Cols::_name, orm::CompareOperator::EQ, name));
         if (genreLoc.empty())
-            return {};
-        return genreLoc[0].getValueOfGenreId();
+            co_return {};
+        co_return genreLoc[0].getValueOfGenreId();
     }
     catch (const drogon::orm::DrogonDbException& e)
     {
         LOG_ERROR<<"Ошибка запроса: "<<e.base().what();
-        return {};
+        co_return {};
     }
 }
-std::optional<int64_t> insertGenre()
+coro::task<std::optional<int64_t>> insertGenre()
 {
-    orm::Mapper<models::Genres> mp(app().getDbClient());
     try
     {
         models::Genres genre;
-        mp.insert(genre);
-        return genre.getValueOfId();
+        co_await insertRecord(genre);
+        co_return genre.getValueOfId();
     }
     catch (const drogon::orm::DrogonDbException& e)
     {
         LOG_ERROR<<"Ошибка запроса: "<<e.base().what();
-        return {};
+        co_return {};
     }
-    return {};
+    co_return {};
 }
-std::optional<int64_t> insertGenreLocalization(const int64_t genreID, const Language language, const std::string& name)
-{
-    orm::Mapper<models::GenreLocalizations> mp(app().getDbClient());
-    try
-    {
-        models::GenreLocalizations genreLoc;
-        genreLoc.setGenreId(genreID);
-        genreLoc.setLanguageId(enumToInt(language));
-        genreLoc.setName(name);
-        mp.insert(genreLoc);
-        return genreLoc.getPrimaryKey();
-    }
-    catch (const drogon::orm::DrogonDbException& e)
-    {
-        LOG_ERROR<<"Ошибка запроса: "<<e.base().what();
-        return {};
-    }
-}
-bool assignGenre(const int64_t genreID, const int64_t mediaItemID)
-{
-    orm::Mapper<models::GenreAssignments> mp(app().getDbClient());
 
-    try
-    {
-        models::GenreAssignments assignment;
-        assignment.setGenreId(genreID);
-        assignment.setMediaItemId(mediaItemID);
-        mp.insert(assignment);
-        updateMediaItemTimestamp(mediaItemID);
-        return true;
-    }
-    catch (const drogon::orm::DrogonDbException& e)
-    {
-        LOG_ERROR<<"Ошибка запроса: "<<e.base().what();
-        return false;
-    }
-}
-bool isAssigned(const int64_t genreID, const int64_t mediaItemID)
+coro::task<std::optional<int64_t>> insertGenreLocalization(const int64_t genreID, const Language language, const std::string& name)
 {
-    orm::Mapper<models::GenreAssignments> mp(app().getDbClient());
-    try
-    {
-        auto assignment = mp.findOne(orm::Criteria(models::GenreAssignments::Cols::_genre_id, orm::CompareOperator::EQ, genreID) &&
-                        orm::Criteria(models::GenreAssignments::Cols::_media_item_id, orm::CompareOperator::EQ, mediaItemID));
-        return true;
-    }
-    catch (const drogon::orm::DrogonDbException& e)
-    {
-        LOG_ERROR<<"Ошибка запроса: "<<e.base().what();
-        return false;
-    }
+    models::GenreLocalizations genreLoc;
+    genreLoc.setGenreId(genreID);
+    genreLoc.setLanguageId(enumToInt(language));
+    genreLoc.setName(name);
+    co_return co_await insertRecord(genreLoc);
+}
+
+coro::task<bool> assignGenre(const int64_t genreID, const int64_t mediaItemID)
+{
+    models::GenreAssignments assignment;
+    assignment.setGenreId(genreID);
+    assignment.setMediaItemId(mediaItemID);
+    auto ret = co_await insertRecord(assignment);
+    if (!ret.has_value())
+        co_return false;
+    co_await updateMediaItemTimestamp(mediaItemID);
+    co_return true;
+}
+
+coro::task<bool> isAssigned(const int64_t genreID, const int64_t mediaItemID)
+{
+    co_return (co_await findRecordByCriteria<models::GenreAssignments>(orm::Criteria(models::GenreAssignments::Cols::_genre_id, orm::CompareOperator::EQ, genreID) &&
+                    orm::Criteria(models::GenreAssignments::Cols::_media_item_id, orm::CompareOperator::EQ, mediaItemID))).has_value();
 }
 
 
 // Возвращает response.text
-std::string getImageData(const std::string& imageLink)
+coro::task<std::string> getImageData(const std::string& imageLink)
 {
-    cpr::Response resp = cpr::Get(cpr::Url(imageLink));
+    cpr::Response resp = co_await getCoro(cpr::Url(imageLink), cpr::Timeout(3000));                                                   
     if (resp.error.code != cpr::ErrorCode::OK)
     {
         LOG_ERROR<<std::format("getImageData cpr error {}", resp.error.message);
-        return {};
+        co_return {};
     }
 
     if (resp.status_code != 200)
     {
         LOG_ERROR<<std::format("getImageData error {}", resp.text);
-        return {};
+        co_return {};
     }
-    std::string contentType = resp.header["content-type"];
+    std::string& contentType = resp.header["content-type"];
     if (contentType.find("image") == std::string::npos)
     {
         LOG_ERROR<<std::format("Ошибка тип контента не изображение, а {}", contentType);
-        return {};
+        co_return {};
     }
-    return std::move(resp.text);
+    co_return std::move(resp.text);
 }
 
 // Возвращает путь на файл
-std::string createImageFromLink(const std::string& imageLink, const std::string& pathToDirectory)
+coro::task<std::string> createImageFromLink(const std::string& imageLink, const std::string& pathToDirectory)
 {
     LOG_DEBUG<<std::format("createImageFromLink({}, {})", imageLink, pathToDirectory);
     if (imageLink.empty() || pathToDirectory.empty())
-        return {};
+        co_return {};
     std::string filePath = pathToDirectory + ((imageLink[0] == '/') ? "" : "/") + imageLink.substr(imageLink.rfind("/")+1);
     if (pathExists(filePath))
     {
         LOG_INFO<<"Файл уже существует";
-        return {};
+        co_return {};
     }
     LOG_INFO<<std::format("filePath {}", filePath);
-    std::string imageData = getImageData(imageLink);
+    std::string imageData = co_await getImageData(imageLink);
     if (imageData.empty())
-        return {};
+        co_return {};
     std::ofstream imageFile(filePath, std::ios::binary | std::ios::out);
     imageFile << imageData;
     imageFile.close();
-    return filePath;
+    co_return filePath;
 }
 
-std::optional<int64_t> CreateAndInsertImage(const std::string& imageLink, const std::string& pathToDirectory, const ImageType type, const Language language)
+coro::task<std::optional<int64_t>> CreateAndInsertImage(const std::string& imageLink, const std::string& pathToDirectory, const ImageType type, const Language language)
 {
-    std::string imagePath = createImageFromLink(imageLink, pathToDirectory);
+    LOG_DEBUG<<std::format("CreateAndInsertImage({}, {}, {}, {})", imageLink, pathToDirectory, enumToInt(type), enumToInt(language));
+    std::string imagePath = co_await createImageFromLink(imageLink, pathToDirectory);
     if (imagePath.empty())
-        return {};
-    return insertImage(imagePath, type, language);
+        co_return {};
+    co_return co_await insertImage(imagePath, type, language);
 }
 
 
-std::optional<int64_t> insertImage(const std::string& path, const ImageType type, const Language language)
+coro::task<std::optional<int64_t>> insertImage(const std::string& path, const ImageType type, const Language language)
 {
     if (path.empty())
-        return {};
+        co_return {};
     models::Images image;
     image.setLanguageId(enumToInt(language));
     image.setImageTypeId(enumToInt(type));
     image.setPath(path);
-    if (insertRecord(image))
-        return image.getPrimaryKey();
-    return {};
+    if (co_await insertRecord(image))
+        co_return image.getPrimaryKey();
+    co_return {};
 }
 
-void assignImage(const int64_t imageID, const int64_t mediaItemID)
+coro::task<void> assignImage(const int64_t imageID, const int64_t mediaItemID)
 {
     models::MediaItemImageAssignments assignment;
     assignment.setMediaItemId(mediaItemID);
     assignment.setImageId(imageID);
-    insertRecord(assignment);
-    return;
+    co_await insertRecord(assignment);
+    co_return;
 }
 
-void insertImage(const ImageType type, const Language language, const std::string& path, const int64_t mediaItemID)
+coro::task<void> insertImage(const ImageType type, const Language language, const std::string& path, const int64_t mediaItemID)
 {
     if (path.empty())
-        return;
-    auto imageID = insertImage(path, type, language);
+        co_return;
+    auto imageID = co_await insertImage(path, type, language);
     if (!imageID.has_value())
-        return;
-    assignImage(*imageID, mediaItemID);
+        co_return;
+    co_await assignImage(*imageID, mediaItemID);
 }
 
-void insertImage(const LibraryScanSettings& scanSettings, const ImageType type, const Language language, const std::string& imageLink, const int64_t mediaItemID)
+coro::task<void> insertImage(const LibraryScanSettings scanSettings, const ImageType type, const Language language, const std::string& imageLink, const int64_t mediaItemID)
 {
-    std::string saveDirectory{"/home/demonjarl/Studies/Diplom/MediaServer/images"};// scanSettings
-    auto imageID = CreateAndInsertImage(imageLink, saveDirectory, type, language);
+    auto imageID = co_await CreateAndInsertImage(imageLink, ServerSettingsManager::Instance().getImageSaveDirectory(), type, language);
     if (!imageID.has_value())
-        return;
-    assignImage(*imageID, mediaItemID);
-}
-
-void insertImages(const TMDBAPI::Models::PartialMediaImages& images, const Language& language, const int64_t mediaItemID)
-{
-
+        co_return;
+    co_await assignImage(*imageID, mediaItemID);
 }
 
 
-
-std::optional<int64_t> insertProductionCompany(const std::string& name, orm::DbClientPtr dbPointer)
+coro::task<std::optional<int64_t>> insertProductionCompany(const std::string& name, orm::DbClientPtr dbPointer)
 {
     if(!dbPointer)
         dbPointer = app().getDbClient();
 
-    auto rec = findRecordByCriteriaORM<models::ProductionCompanies>(orm::Criteria(models::ProductionCompanies::Cols::_name, orm::CompareOperator::EQ, name), dbPointer);
+    auto rec = co_await findRecordByCriteriaORM<models::ProductionCompanies>(orm::Criteria(models::ProductionCompanies::Cols::_name, orm::CompareOperator::EQ, name), dbPointer);
     if (rec.has_value())
-    {
-        return rec->getPrimaryKey();
-    }
-    try
-    {
-        orm::Mapper<models::ProductionCompanies> mp(dbPointer);
-        models::ProductionCompanies company;
-        company.setName(name);
-        mp.insert(company);
-        return company.getPrimaryKey();
-    }
-    catch (const drogon::orm::DrogonDbException& e)
-    {
-        LOG_ERROR<<"Ошибка запроса: "<<e.base().what();
-        return {};
-    }
+        co_return rec->getPrimaryKey();
+
+    orm::Mapper<models::ProductionCompanies> mp(dbPointer);
+    models::ProductionCompanies company;
+    company.setName(name);
+    co_return co_await insertRecord(company);
 }
 
-bool assignProductionCompany(const int64_t mediaItemID, const int64_t productionCompanyID, orm::DbClientPtr dbPointer)
+coro::task<bool> assignProductionCompany(const int64_t mediaItemID, const int64_t productionCompanyID, orm::DbClientPtr dbPointer)
 {
     if(!dbPointer)
         dbPointer = app().getDbClient();
-    try
-    {
-        if (recordExists<models::ProductionCompanyAssignments>(orm::Criteria(models::ProductionCompanyAssignments::Cols::_media_item_id, orm::CompareOperator::EQ, mediaItemID)
-            && orm::Criteria(models::ProductionCompanyAssignments::Cols::_production_company_id, orm::CompareOperator::EQ, productionCompanyID), dbPointer))
-            return true;
-        orm::Mapper<models::ProductionCompanyAssignments> mp(dbPointer);
-        models::ProductionCompanyAssignments assignment;
-        assignment.setProductionCompanyId(productionCompanyID);
-        assignment.setMediaItemId(mediaItemID);
-        mp.insert(assignment);
-        updateMediaItemTimestamp(mediaItemID);
-        return true;
-    }
-    catch (const drogon::orm::DrogonDbException& e)
-    {
-        LOG_ERROR<<"Ошибка запроса: "<<e.base().what();
-        return false;
-    }
+    if (co_await recordExists<models::ProductionCompanyAssignments>(orm::Criteria(models::ProductionCompanyAssignments::Cols::_media_item_id, orm::CompareOperator::EQ, mediaItemID)
+        && orm::Criteria(models::ProductionCompanyAssignments::Cols::_production_company_id, orm::CompareOperator::EQ, productionCompanyID), dbPointer))
+        co_return true;
+    orm::Mapper<models::ProductionCompanyAssignments> mp(dbPointer);
+    models::ProductionCompanyAssignments assignment;
+    assignment.setProductionCompanyId(productionCompanyID);
+    assignment.setMediaItemId(mediaItemID);
+    if (!(co_await insertRecord(assignment)).has_value())
+        co_return false;
+    co_await updateMediaItemTimestamp(mediaItemID);
+    co_return true;
 }
 // Вставка/нахождение компании и привязка
-std::optional<int64_t> insertProductionCompany(const int64_t mediaItemID, const std::string& name)
+coro::task<std::optional<int64_t>> insertProductionCompany(const int64_t mediaItemID, const std::string& name)
 {
     auto dbPointer = app().getDbClient();
-    auto companyID = insertProductionCompany(name, dbPointer);
+    auto companyID = co_await insertProductionCompany(name, dbPointer);
     if (!companyID.has_value())
-        return {};
-    metaDataThreadPool.detach_task([mediaItemID, companyID, dbPointer]{
-        assignProductionCompany(mediaItemID, *companyID, dbPointer);
-    });
-    return companyID;
+        co_return {};
+    co_await assignProductionCompany(mediaItemID, *companyID, dbPointer);
+    co_return companyID;
 }
 
 

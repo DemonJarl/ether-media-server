@@ -65,7 +65,7 @@ TVSeriesDetails::TVSeriesDetails(const Json::Value& json) : MediaDetails(json)
     if (!json.find("last_episode_to_air"))
         throw std::invalid_argument("");
     if (!json["last_episode_to_air"].isNull())
-        lastAiredEpisode = std::move(PartialEpisode(json["last_episode_to_air"]));
+        lastAiredEpisode = PartialEpisode(json["last_episode_to_air"]);
         
     if (!json.find("networks"))
         throw std::invalid_argument("");

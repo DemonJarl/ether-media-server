@@ -60,6 +60,14 @@ FetchContent_Declare(libcron GIT_REPOSITORY https://github.com/PerMalmberg/libcr
 FetchContent_MakeAvailable(libcron)
 FetchContent_Declare(bcrypt GIT_REPOSITORY https://github.com/hilch/Bcrypt.cpp)
 FetchContent_MakeAvailable(bcrypt)
+# Fetch the project and make it available for use.
+include(FetchContent)
+FetchContent_Declare(
+    libcoro
+    GIT_REPOSITORY https://github.com/jbaldwin/libcoro.git
+    GIT_TAG        v0.15.0
+)
+FetchContent_MakeAvailable(libcoro)
 
 CPMAddPackage(
     NAME BS_thread_pool
@@ -85,7 +93,8 @@ add_library(BS_thread_pool INTERFACE)
 target_include_directories(BS_thread_pool INTERFACE ${BS_thread_pool_SOURCE_DIR}/include)
 find_package(Drogon CONFIG REQUIRED)
 find_package(spdlog REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE PkgConfig::LIBAV tbb Boost::algorithm BS_thread_pool bcrypt libcron spdlog::spdlog cpr::cpr Drogon::Drogon caches PkgConfig::LIBAV) 
+
+target_link_libraries(${PROJECT_NAME} PRIVATE PkgConfig::LIBAV tbb Boost::algorithm BS_thread_pool bcrypt libcron spdlog::spdlog cpr::cpr Drogon::Drogon caches PkgConfig::LIBAV libcoro pthread rt) 
 
 #set (CMAKE_CXX_FLAGS  "-${CMAKE_CXX_FLAGS} ${SEQAN_CXX_FLAGS} -ltbb")
 # ##############################################################################

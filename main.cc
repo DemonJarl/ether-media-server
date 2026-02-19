@@ -2,6 +2,7 @@
 #include <drogon/drogon.h>
 #include <trantor/utils/Logger.h>
 #include "Enums/Enums.hpp"
+#include "ServerSettingsManager.hpp"
 #include "ThreadPool.h"
 #include "MetaDataAPI/TMDB/BaseAPI.hpp"
 #include "DBUtils.h"
@@ -18,7 +19,11 @@ int main() {
             req->addHeader("Access-Control-Allow-Origin", "*");
         });
     // Функция запускается сражу же после запуска сервера
-    // drogon::app().registerBeginningAdvice(const std::function<void ()> &advice);
+    drogon::app().registerBeginningAdvice([]{
+        ServerSettingsManager& serverSettings = ServerSettingsManager::Instance();
+        TMDBAPI::BaseAPI::setLanguage(TMDBAPI::Languages::Ru);
+        TMDBAPI::BaseAPI::setKey(serverSettings.getTMDBKey());
+    });
     drogon::app().setIntSignalHandler([]{
         LOG_INFO<<"Сервер выключается";
         threadPool.wait();
@@ -28,8 +33,7 @@ int main() {
         metaDataThreadPool.wait();
         app().quit();
     });
-    // Настройки мета дата api
-    TMDBAPI::BaseAPI::setLanguage(TMDBAPI::Languages::Ru);
+   
     //drogon::app().loadConfigFile("../config.yaml");
     //Run HTTP framework,the method will block in the internal event loop
     //threadPool.Start();
