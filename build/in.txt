@@ -1,3 +1,0 @@
-;FFMETADATA1
-title=Infinity Train S01E01
-encoder=Lavf62.3.100
