@@ -57,10 +57,10 @@ struct LibraryScanSettings
     std::string libraryId;
     MetaDataProvider metaDataProvider = MetaDataProvider::Local;//= MetaDataProvider::TMDB;
     bool includeAdult = false;
-    bool collectEpisodeCredits = false;
-    bool collectSeasonCredits = false;
-    bool collectMovieCredits = false;
-    bool collectShowCredits = false;
+    bool collectEpisodeCredits = true;
+    bool collectSeasonCredits = true;
+    bool collectMovieCredits = true;
+    bool collectShowCredits = true;
     std::vector<Language> languagesToScanFor{Language::en, Language::ru};
     //bool includeMedia{};
     LibraryScanSettings(){};
@@ -237,12 +237,12 @@ coro::task<std::optional<int64_t>> findCredit(const int64_t personID, const int6
 coro::task<std::optional<int64_t>> findCredits(const int64_t personID, const int64_t mediaItemID, const CreditType creditType);
 inline coro::task<std::optional<int64_t>> findCredit(const MetaDataProvider origin, const std::string& externalID)
 {
-    return findRecordByCriteria<models::Credits>(orm::Criteria(models::Credits::Cols::_origin, orm::CompareOperator::EQ, enumToInt(origin))
+    co_return co_await findRecordByCriteria<models::Credits>(orm::Criteria(models::Credits::Cols::_origin, orm::CompareOperator::EQ, enumToInt(origin))
                                                     && orm::Criteria(models::Credits::Cols::_external_id, orm::CompareOperator::EQ, externalID));
 }
-inline bool isCreditLocalized(const int64_t creditID, const Language language)
+inline coro::task<bool> isCreditLocalized(const int64_t creditID, const Language language)
 {
-    return coro::sync_wait(findRecordByCriteria<models::CreditLocalizations>(orm::Criteria(models::CreditLocalizations::Cols::_credit_id, orm::CompareOperator::EQ, creditID)
+    co_return (co_await findRecordByCriteria<models::CreditLocalizations>(orm::Criteria(models::CreditLocalizations::Cols::_credit_id, orm::CompareOperator::EQ, creditID)
                                                     && orm::Criteria(models::CreditLocalizations::Cols::_language_id, orm::CompareOperator::EQ, enumToInt(language)))).has_value();
 }
 

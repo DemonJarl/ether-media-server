@@ -19,27 +19,27 @@ namespace TMDBAPI::Models
 
         std::string getImageLink(PosterSize size, bool secure = true)
         {
-            return (((secure) ? secureImageURL : baseImageURL) + '/' + imageSizeToString(size) + "/" + filePath);
+            return (((secure) ? secureImageURL : baseImageURL) + '/' + imageSizeToString(size) + filePath);
         }
 
         std::string getImageLink(LogoSize size, bool secure = true)
         {
-            return (((secure) ? secureImageURL : baseImageURL) + '/' + imageSizeToString(size) + "/" + filePath);
+            return (((secure) ? secureImageURL : baseImageURL) + '/' + imageSizeToString(size)+ filePath);
         }
         
         std::string getImageLink(BackdropSize size, bool secure = true)
         {
-            return (((secure) ? secureImageURL : baseImageURL) + '/' + imageSizeToString(size) + "/" + filePath);
+            return (((secure) ? secureImageURL : baseImageURL) + '/' + imageSizeToString(size) + filePath);
         }
         
         std::string getImageLink(StillSize size, bool secure = true)
         {
-            return (((secure) ? secureImageURL : baseImageURL) + '/' + imageSizeToString(size) + "/" + filePath);
+            return (((secure) ? secureImageURL : baseImageURL) + '/' + imageSizeToString(size) + filePath);
         }
         
         std::string getImageLink(ProfileSize size, bool secure = true)
         {
-            return (((secure) ? secureImageURL : baseImageURL) + '/' + imageSizeToString(size) + "/" + filePath);
+            return (((secure) ? secureImageURL : baseImageURL) + '/' + imageSizeToString(size) + filePath);
         }
     };
 }

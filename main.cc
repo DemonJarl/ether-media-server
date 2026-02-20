@@ -26,6 +26,9 @@ int main() {
     });
     drogon::app().setIntSignalHandler([]{
         LOG_INFO<<"Сервер выключается";
+        threadPool.purge();
+        metaDataThreadPool.purge();
+        scanThreadPool.purge();
         threadPool.wait();
         LOG_INFO<<"Начинаем ожидание scanThreadPool";
         scanThreadPool.wait();

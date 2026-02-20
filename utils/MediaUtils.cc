@@ -78,6 +78,7 @@
 #include "coro/mutex.hpp"
 #include "coro/sync_wait.hpp"
 #include "coro/task.hpp"
+#include "coro/when_all.hpp"
 #include "cpr/cprtypes.h"
 #include <format>
 extern "C" 
@@ -449,13 +450,9 @@ void analyzeFile(const fs::directory_entry& file, const LibraryScanSettings scan
         }
         item.setParentId(*parentID);
         item.setLastUpdated(getCurrentDateTime());
-        try
+        if (!coro::sync_wait(insertRecord(item)).has_value())
         {
-            mp.insert(item);
-        }
-        catch (const drogon::orm::DrogonDbException& e)
-        {
-            LOG_ERROR<<std::format("Ошибка вставки media_items: {} {}", e.base().what(), item.getValueOfPath());
+            LOG_ERROR<<std::format("Ошибка вставки media_items: {}", item.getValueOfPath());
             avformat_close_input(&fmt_ctx); // важно!
             return;
         }
@@ -468,13 +465,9 @@ void analyzeFile(const fs::directory_entry& file, const LibraryScanSettings scan
         item.setMediaItemTypeId(enumToInt(MediaType::Movie));
         item.setParsedName(parsedSeriesTitle);
         item.setLastUpdated(getCurrentDateTime());
-        try
+        if (!coro::sync_wait(insertRecord(item)).has_value())
         {
-            mp.insert(item);
-        }
-        catch (const drogon::orm::DrogonDbException& e)
-        {
-            LOG_ERROR<<std::format("Ошибка вставки media_items: {} {}", e.base().what(), item.getValueOfPath());
+            LOG_ERROR<<std::format("Ошибка вставки media_items: {}", item.getValueOfPath());
             avformat_close_input(&fmt_ctx); // важно!
             return;
         }
@@ -642,17 +635,6 @@ models::MediaItemStreams parseStream(AVStream& stream, int64_t mediaItemID)
     return ret;
 }
 
-bool getDataFromMetadataProviders(const LibraryScanSettings scanSettings, const models::MediaItems& mediaItem)
-{
-    MediaType type = static_cast<MediaType>(mediaItem.getValueOfMediaItemTypeId());
-    bool parsed = false;
-    if (hasFlag(scanSettings.metaDataProvider, MetaDataProvider::TMDB))
-    {
-        // TMDBAPI::Endpoints::SearchTV
-    }
-    return false;
-}
-
 
 coro::task<std::optional<int64_t>> findSeasonMediaItemID(const std::string& seriesTitle, const int64_t season, const std::string& releaseDate, orm::DbClientPtr dbPointer)
 {
@@ -770,14 +752,14 @@ coro::task<std::optional<int64_t>> getParentForEpisode(const std::string& showTi
     auto showID = co_await createTVShowMediaItem(scanSettings, showTitle, releaseDate);
     if (!showID.has_value())
     {
-        LOG_ERROR<<std::format("showID пустой для {}",showTitle);
+        LOG_ERROR<<std::format("showID пустой для {}", showTitle);
         co_return {};
     }
 
     id = co_await createTVSeasonMediaItem(scanSettings, *showID, season, releaseDate);
     if (!id.has_value())
     {
-        LOG_DEBUG<<std::format("Не смогли создать новый сезон для созданого сериала");
+        LOG_DEBUG<<std::format("Не смогли создать новый сезон для созданого сериала {}", showTitle);
         co_return {};
     }
     co_return id;
@@ -1168,7 +1150,7 @@ coro::task<bool> getTVEpisodeMetaDataTMDB(const LibraryScanSettings scanSettings
     if (tvEpisodeDetails->credits.has_value() && scanSettings.collectEpisodeCredits)
     {
         co_await insertCredits(tvEpisodeDetails->credits->cast, language, mediaItemID);
-        co_await insertCredits(tvEpisodeDetails->credits->crew, language, mediaItemID);
+        // co_await insertCredits(tvEpisodeDetails->credits->crew, language, mediaItemID);
     }
     //  if (!tvEpisodeDetails->details.crew.empty())
     //         futures.emplace_back(metaDataThreadPool.submit_task([&tvEpisodeDetails, mediaItemID, language]{
@@ -1259,8 +1241,6 @@ coro::task<bool> getTVShowMetaDataTMDB(const LibraryScanSettings scanSettings, c
 coro::task<bool> getTVSeasonMetaDataTMDB(const LibraryScanSettings scanSettings, const int TMDBShowID, const int TMDBSeasonID, const int64_t mediaItemID, const Language language, const bool original)
 {
     LOG_DEBUG<<std::format("getTVSeasonMetaDataTMDB({}, {}, {}, {})", TMDBShowID, TMDBSeasonID, mediaItemID, enumToInt(language));
-    std::vector<std::future<void>> futures;
-    futures.reserve(5);
     auto seasonDetails = TMDBAPI::Endpoints::TVSeason(TMDBShowID, TMDBSeasonID).getDetails(languageToTMDBLanguage(language), TMDBAPI::TVSeasonAppendToResponse::Credits);
     // auto seasonDetails = TMDBAPI::Endpoints::TVSeason(TMDBShowID, TMDBSeasonID).getDetails(languageToTMDBLanguage(language));
     if (!seasonDetails.has_value())
@@ -1270,10 +1250,10 @@ coro::task<bool> getTVSeasonMetaDataTMDB(const LibraryScanSettings scanSettings,
         co_return false;
     }
     co_await insertMediaItemLocalization(mediaItemID, language, seasonDetails->details.name, seasonDetails->details.overview, "", original);
-    if (seasonDetails->credits.has_value() && scanSettings.collectSeasonCredits)
+    if ((*seasonDetails).credits.has_value() && scanSettings.collectSeasonCredits)
     {
-        co_await insertCredits(seasonDetails->credits->crew, language, mediaItemID);
-        co_await insertCredits(seasonDetails->credits->cast, language, mediaItemID);
+        // co_await insertCredits(seasonDetails->credits->crew, language, mediaItemID);
+        co_await insertCredits((*(*seasonDetails).credits).cast, language, mediaItemID);
         // futures.emplace_back(metaDataThreadPool.submit_task([&seasonDetails, language, mediaItemID]{
         //     insertCredits(seasonDetails->credits->guestStars, language, mediaItemID);
         // }));
@@ -1284,8 +1264,6 @@ coro::task<bool> getTVSeasonMetaDataTMDB(const LibraryScanSettings scanSettings,
         if ((*(*seasonDetails).images).posters.size() > 0 && !(co_await hasImage(mediaItemID, ImageType::Poster, language)))
             co_await insertImage(scanSettings, ImageType::Poster, language, (*(*seasonDetails).images).posters[0].getImageLink(TMDBAPI::PosterSize::Original), mediaItemID);
     }
-    for (auto& future : futures)
-        future.wait();
     co_return true;
 }
 
@@ -1307,7 +1285,7 @@ coro::task<bool> getMovieMetaDataTMDB(const LibraryScanSettings scanSettings, co
 
     if ((*movieDetails).credits.has_value() && scanSettings.collectMovieCredits)
     {
-            co_await insertCredits((*movieDetails).credits->crew, language, mediaItemID);
+            // co_await insertCredits((*movieDetails).credits->crew, language, mediaItemID);
             co_await insertCredits((*movieDetails).credits->cast, language, mediaItemID);
         // futures.emplace_back(metaDataThreadPool.submit_task([&seasonDetails, language, mediaItemID]{
         //     insertCredits(seasonDetails->credits->guestStars, language, mediaItemID);
@@ -1733,24 +1711,13 @@ coro::task<std::optional<int64_t>>  insertCredit(const int64_t personID, const C
 
 coro::task<std::optional<int64_t>> insertCreditLocalization(const int64_t creditID, const Language language, const std::string& text)
 {
-    if (isCreditLocalized(creditID, language))
+    if (co_await isCreditLocalized(creditID, language))
         co_return {};
-    orm::Mapper<models::CreditLocalizations> mp(drogon::app().getDbClient());
-    try
-    {
-        models::CreditLocalizations creditLoc;
-        creditLoc.setCreditId(creditID);
-        creditLoc.setLanguageId(enumToInt(language));
-        creditLoc.setText(text);
-        mp.insert(creditLoc);
-        co_return creditLoc.getPrimaryKey();
-    }
-    catch (const drogon::orm::DrogonDbException e)
-    {
-        LOG_ERROR<<"Ошибка запроса: "<<e.base().what();
-        co_return {};
-    }
-    co_return {};
+    models::CreditLocalizations creditLoc;
+    creditLoc.setCreditId(creditID);
+    creditLoc.setLanguageId(enumToInt(language));
+    creditLoc.setText(text);
+    co_return co_await insertRecord(creditLoc);
 }
 
 coro::task<std::optional<int64_t>> insertPersonExternalID(const int64_t personID, const MetaDataProvider provider, const std::string& externalID)
@@ -1839,7 +1806,7 @@ coro::task<std::optional<int64_t>> findOrInsertPerson(const MetaDataProvider pro
     if (personID.has_value())
     {
         if (hasFlag(provider, MetaDataProvider::TMDB))
-            metaDataThreadPool.detach_task([personID, id, language]{localizePersonTMDB(*personID, std::stoi(id), language);});
+            metaDataThreadPool.detach_task([personID, id, language]{coro::sync_wait(localizePersonTMDB(*personID, std::stoi(id), language));});
         co_return personID;
     }
     co_return co_await insertPerson(provider, id, language);
@@ -1848,17 +1815,17 @@ coro::task<std::optional<int64_t>> findOrInsertPerson(const MetaDataProvider pro
 coro::task<std::optional<int64_t>> insertPerson(const MetaDataProvider provider, const std::string& id, const Language language)
 {
     if (id.empty())
-        return {};
+        co_return {};
     switch (provider) 
     {
         case MetaDataProvider::TMDB:
-            return insertPersonTMDB(std::stoi(id), language);
+            co_return co_await insertPersonTMDB(std::stoi(id), language);
         case MetaDataProvider::KinoPoisk:
-            return {};
+            co_return {};
         case MetaDataProvider::OMDB:
-            return {};
+            co_return {};
         default:
-            return {};
+            co_return {};
     }
 }
 
@@ -1872,41 +1839,36 @@ coro::task<std::optional<int64_t>> insertPersonTMDB(const int id, const Language
         LOG_ERROR<<std::format("Не удалось выполнить запрос на получение человека с id({}) из TMDB API", id);
         co_return {};
     }
-    orm::Mapper<models::People> mp(app().getDbClient());
-    try
+    models::People person;
+    person.setGenderId(enumToInt(details->details.gender));
+    person.setDateOfBirth(details->details.birthday);
+    person.setDateOfDeath(details->details.deathday);
+    //person.setOriginalName(details->name);
+    if (!details->details.profilePath.empty())
     {
-        models::People person;
-        person.setGenderId(enumToInt(details->details.gender));
-        person.setDateOfBirth(details->details.birthday);
-        person.setDateOfDeath(details->details.deathday);
-        //person.setOriginalName(details->name);
-        if (!details->details.profilePath.empty())
-        {
-            auto imageID = co_await CreateAndInsertImage(TMDBAPI::secureImageURL + "/" +details->details.profilePath, ServerSettingsManager::Instance().getImageSaveDirectory(), ImageType::Portrait, language);
-            if (imageID)
-                person.setPortretId(*imageID);
-        }
-        mp.insert(person);
-        int64_t ret = person.getPrimaryKey();
-        // details->details.profilePath
-        co_await insertPersonLocalization(ret, details->details.name, details->details.biography, language);
-
-        // threadPool.detach_task([ret, id]{
-        //     insertPersonExternalID(ret, MetaDataProvider::TMDB, std::to_string(id));
-        // });
- 
-        if (details->externalIDs.has_value())
-            co_await updateExtIds(*details->externalIDs, ret);
-        // threadPool.detach_task([id, ret]{
-        //     localizePersonTMDB(ret, id);
-        // });
-        co_return ret;
+        auto imageID = co_await CreateAndInsertImage(TMDBAPI::secureImageURL + "/original" + details->details.profilePath, ServerSettingsManager::Instance().getImageSaveDirectory(), ImageType::Portrait, language);
+        if (imageID)
+            person.setPortretId(*imageID);
     }
-    catch (const drogon::orm::DrogonDbException& e)
+    auto ret = co_await insertRecord(person);
+    if (!ret.has_value())
     {
-        LOG_ERROR<<"Ошибка вставки человека: "<<e.base().what();
+        LOG_ERROR<<std::format("Не удалось вставить человека с id {}", id);
         co_return {};
     }
+    // details->details.profilePath
+    co_await insertPersonLocalization(*ret, (*details).details.name, (*details).details.biography, language);
+
+    // threadPool.detach_task([ret, id]{
+    //     insertPersonExternalID(ret, MetaDataProvider::TMDB, std::to_string(id));
+    // });
+
+    if ((*details).externalIDs.has_value())
+        co_await updateExtIds((*(*details).externalIDs), *ret);
+    // threadPool.detach_task([id, ret]{
+    //     localizePersonTMDB(ret, id);
+    // });
+    co_return ret;
 }
 
 
@@ -1926,7 +1888,8 @@ coro::task<std::optional<int64_t>> insertPersonLocalization(const int64_t person
             personLoc->setName(name);
         if (diffBio)
             personLoc->setBiography(biography);
-        co_await updateRecord(*personLoc);
+        if (!co_await updateRecord(*personLoc))
+            co_return {};
         co_return personLoc->getPrimaryKey();
     }
     models::PeopleLocalizations tmp;
@@ -1942,7 +1905,6 @@ coro::task<std::optional<int64_t>> insertPersonLocalization(const int64_t person
 coro::task<void> localizePersonTMDB(const int64_t personID, const int id, const Language language)
 {
     LOG_DEBUG<<std::format("localizePersonTMDB({}, {}, {})", personID, id, enumToInt(language));
-    auto dbPointer = app().getDbClient();
     
     if (co_await findPersonLocalizationORM(personID, language))
         co_return;
@@ -1954,27 +1916,18 @@ coro::task<void> localizePersonTMDB(const int64_t personID, const int id, const 
         co_return;
     }
     models::PeopleLocalizations loc;
-    orm::Mapper<models::PeopleLocalizations> mp(dbPointer);
     loc.setLanguageId(enumToInt(language));
     loc.setPersonId(personID);
     loc.setName(personDetails->details.name);
     loc.setBiography(personDetails->details.biography);
-    co_await insertRecord(loc, mp);
+    co_await insertRecord(loc);
+    co_return;
 }
 
 coro::task<std::optional<models::PeopleLocalizations>> findPersonLocalizationORM(const int64_t personID, const Language language)
 {
-    orm::Mapper<models::PeopleLocalizations> mp(app().getDbClient());
-    try
-    {
-        co_return co_await findRecordByCriteriaORM<models::PeopleLocalizations>(orm::Criteria(models::PeopleLocalizations::Cols::_person_id, orm::CompareOperator::EQ, personID) &&
-                orm::Criteria(models::PeopleLocalizations::Cols::_language_id, orm::CompareOperator::EQ, enumToInt(language)));
-    }
-    catch (const drogon::orm::DrogonDbException& e)
-    {
-        LOG_ERROR<<"Ошибка запроса: "<<e.base().what();
-        co_return {};
-    }
+    co_return co_await findRecordByCriteriaORM<models::PeopleLocalizations>(orm::Criteria(models::PeopleLocalizations::Cols::_person_id, orm::CompareOperator::EQ, personID) &&
+            orm::Criteria(models::PeopleLocalizations::Cols::_language_id, orm::CompareOperator::EQ, enumToInt(language)));
 }
 
 coro::task<std::optional<int64_t>> insertCredit(const int64_t personID, const CreditType creditType, const MetaDataProvider origin, const std::string& externalID)
@@ -2046,7 +1999,24 @@ coro::task<void> insertCredits(const std::vector<TMDBAPI::Models::CrewCredit>& c
 }
 
 
-
+coro::task<void> insertCredit(const TMDBAPI::Models::CastCredit& cast, Language language, int64_t mediaItemID)
+{
+    auto personID = co_await findOrInsertPerson(MetaDataProvider::TMDB, std::to_string(cast.id), language, cast.name);
+    if (!personID.has_value())
+    {
+        LOG_ERROR<<std::format("Не удалось найти или вставить человека с ID {}", cast.id);
+        co_return; 
+    }
+    auto creditID = co_await findOrInsertCredit(mediaItemID, *personID, CreditType::Actor, MetaDataProvider::TMDB, cast.creditID);
+    
+    if (!creditID.has_value())
+    {
+        LOG_INFO<<std::format("Не удалось найти или вставить credit {}", cast.creditID);
+        co_return;
+    }
+    co_await insertCreditLocalization(*creditID, language, cast.character);
+    co_return;
+}
 
 
 coro::task<void> insertCredits(const std::vector<TMDBAPI::Models::CastCredit>& castCredits, const Language language, const int64_t mediaItemID)
@@ -2054,54 +2024,26 @@ coro::task<void> insertCredits(const std::vector<TMDBAPI::Models::CastCredit>& c
 
     if (castCredits.empty())
         co_return;
-
     for (auto& cast : castCredits)
     {
-        auto personID = co_await findOrInsertPerson(MetaDataProvider::TMDB, std::to_string(cast.id), language, cast.name);
-        if (!personID.has_value())
-        {
-            LOG_ERROR<<std::format("Не удалось найти или вставить человека с ID {}", cast.id);
-            continue; 
-        }
-        auto creditID = co_await findOrInsertCredit(mediaItemID, *personID, CreditType::Actor, MetaDataProvider::TMDB, cast.creditID);
+        metaDataThreadPool.detach_task([cast = std::move(cast), language, mediaItemID]{coro::sync_wait(insertCredit(cast, language, mediaItemID));});
+        // tmp.emplace_back(insertCredit(cast, language, mediaItemID));
+        // auto personID = co_await findOrInsertPerson(MetaDataProvider::TMDB, std::to_string(cast.id), language, cast.name);
+        // if (!personID.has_value())
+        // {
+        //     LOG_ERROR<<std::format("Не удалось найти или вставить человека с ID {}", cast.id);
+        //     continue; 
+        // }
+        // auto creditID = co_await findOrInsertCredit(mediaItemID, *personID, CreditType::Actor, MetaDataProvider::TMDB, cast.creditID);
         
-        if (!creditID.has_value())
-        {
-            LOG_INFO<<std::format("Не удалось найти или вставить credit {}", cast.creditID);
-            continue;
-        }
-        
-        co_await insertCreditLocalization(*creditID, language, cast.character);
+        // if (!creditID.has_value())
+        // {
+        //     LOG_INFO<<std::format("Не удалось найти или вставить credit {}", cast.creditID);
+        //     continue;
+        // }
+        // co_await insertCreditLocalization(*creditID, language, cast.character);
     }
-    // auto futureCast = threadPool.submit_loop(0, castCredits.size(), [&castCredits, mediaItemID, language](size_t ind){
-    //     const auto& cast = castCredits[ind];
-    //     auto personID = findOrInsertPerson(MetaDataProvider::TMDB, std::to_string(cast.id), language, cast.name);
-    //     if (!personID.has_value())
-    //     {
-    //         LOG_ERROR<<std::format("Не удалось найти или вставить человека с ID {}", cast.id);
-    //         return; 
-    //     }
-    //     auto creditID = findCredit(*personID, mediaItemID, CreditType::Actor);
-    //     // Проверять если локализации?
-    //     if (!creditID.has_value())
-    //         creditID = insertCredit(*personID, mediaItemID, CreditType::Actor);
-        
-        
-    //     if (!creditID.has_value())
-    //     {
-    //         // лог
-    //         LOG_ERROR<<std::format("Не удалось вставить Credit");
-    //         return;
-    //     }   
-    //     insertCreditLocalization(*creditID, language, cast.character);
-    //     // LOG_DEBUG<<std::format("role size {}",cast.roles.size());
-    //     // for (const auto& role : cast.roles)
-    //     // {
-    //     //     LOG_DEBUG<<std::format("role[{}] {}", role.creditId, role.value);
-    //     //     insertCreditLocalization(*creditID, language, role.value);
-    //     // }
-    // });
-    // futureCast.get();
+    // co_await coro::when_all(std::move(tmp));
     co_return;
 }
 
@@ -2123,18 +2065,9 @@ coro::task<std::optional<int64_t>> findGenre(const std::string& name)
 }
 coro::task<std::optional<int64_t>> insertGenre()
 {
-    try
-    {
-        models::Genres genre;
-        co_await insertRecord(genre);
-        co_return genre.getValueOfId();
-    }
-    catch (const drogon::orm::DrogonDbException& e)
-    {
-        LOG_ERROR<<"Ошибка запроса: "<<e.base().what();
-        co_return {};
-    }
-    co_return {};
+    models::Genres genre;
+    co_return co_await insertRecord(genre);
+    co_return genre.getValueOfId();
 }
 
 coro::task<std::optional<int64_t>> insertGenreLocalization(const int64_t genreID, const Language language, const std::string& name)
@@ -2165,7 +2098,6 @@ coro::task<bool> isAssigned(const int64_t genreID, const int64_t mediaItemID)
 }
 
 
-// Возвращает response.text
 coro::task<std::string> getImageData(const std::string& imageLink)
 {
     cpr::Response resp = co_await getCoro(cpr::Url(imageLink), cpr::Timeout(3000));                                                   
