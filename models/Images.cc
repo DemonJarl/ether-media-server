@@ -6,6 +6,8 @@
  */
 
 #include "Images.h"
+#include "MediaItemImageAssignments.h"
+#include "MediaItems.h"
 #include <drogon/utils/Utilities.h>
 #include <string>
 
@@ -17,6 +19,8 @@ const std::string Images::Cols::_id = "id";
 const std::string Images::Cols::_image_type_id = "image_type_id";
 const std::string Images::Cols::_language_id = "language_id";
 const std::string Images::Cols::_path = "path";
+const std::string Images::Cols::_origin = "origin";
+const std::string Images::Cols::_image_link = "image_link";
 const std::string Images::primaryKeyName = "id";
 const bool Images::hasPrimaryKey = true;
 const std::string Images::tableName = "images";
@@ -25,7 +29,9 @@ const std::vector<typename Images::MetaData> Images::metaData_={
 {"id","int64_t","integer",8,1,1,1},
 {"image_type_id","int64_t","integer",8,0,0,1},
 {"language_id","int64_t","integer",8,0,0,1},
-{"path","std::string","text",0,0,0,1}
+{"path","std::string","text",0,0,0,1},
+{"origin","int64_t","integer",8,0,0,1},
+{"image_link","std::string","text",0,0,0,0}
 };
 const std::string &Images::getColumnName(size_t index) noexcept(false)
 {
@@ -52,11 +58,19 @@ Images::Images(const Row &r, const ssize_t indexOffset) noexcept
         {
             path_=std::make_shared<std::string>(r["path"].as<std::string>());
         }
+        if(!r["origin"].isNull())
+        {
+            origin_=std::make_shared<int64_t>(r["origin"].as<int64_t>());
+        }
+        if(!r["image_link"].isNull())
+        {
+            imageLink_=std::make_shared<std::string>(r["image_link"].as<std::string>());
+        }
     }
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 4 > r.size())
+        if(offset + 6 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
@@ -82,13 +96,23 @@ Images::Images(const Row &r, const ssize_t indexOffset) noexcept
         {
             path_=std::make_shared<std::string>(r[index].as<std::string>());
         }
+        index = offset + 4;
+        if(!r[index].isNull())
+        {
+            origin_=std::make_shared<int64_t>(r[index].as<int64_t>());
+        }
+        index = offset + 5;
+        if(!r[index].isNull())
+        {
+            imageLink_=std::make_shared<std::string>(r[index].as<std::string>());
+        }
     }
 
 }
 
 Images::Images(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 4)
+    if(pMasqueradingVector.size() != 6)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -123,6 +147,22 @@ Images::Images(const Json::Value &pJson, const std::vector<std::string> &pMasque
         if(!pJson[pMasqueradingVector[3]].isNull())
         {
             path_=std::make_shared<std::string>(pJson[pMasqueradingVector[3]].asString());
+        }
+    }
+    if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
+    {
+        dirtyFlag_[4] = true;
+        if(!pJson[pMasqueradingVector[4]].isNull())
+        {
+            origin_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[4]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[5].empty() && pJson.isMember(pMasqueradingVector[5]))
+    {
+        dirtyFlag_[5] = true;
+        if(!pJson[pMasqueradingVector[5]].isNull())
+        {
+            imageLink_=std::make_shared<std::string>(pJson[pMasqueradingVector[5]].asString());
         }
     }
 }
@@ -161,12 +201,28 @@ Images::Images(const Json::Value &pJson) noexcept(false)
             path_=std::make_shared<std::string>(pJson["path"].asString());
         }
     }
+    if(pJson.isMember("origin"))
+    {
+        dirtyFlag_[4]=true;
+        if(!pJson["origin"].isNull())
+        {
+            origin_=std::make_shared<int64_t>((int64_t)pJson["origin"].asInt64());
+        }
+    }
+    if(pJson.isMember("image_link"))
+    {
+        dirtyFlag_[5]=true;
+        if(!pJson["image_link"].isNull())
+        {
+            imageLink_=std::make_shared<std::string>(pJson["image_link"].asString());
+        }
+    }
 }
 
 void Images::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 4)
+    if(pMasqueradingVector.size() != 6)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -202,6 +258,22 @@ void Images::updateByMasqueradedJson(const Json::Value &pJson,
             path_=std::make_shared<std::string>(pJson[pMasqueradingVector[3]].asString());
         }
     }
+    if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
+    {
+        dirtyFlag_[4] = true;
+        if(!pJson[pMasqueradingVector[4]].isNull())
+        {
+            origin_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[4]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[5].empty() && pJson.isMember(pMasqueradingVector[5]))
+    {
+        dirtyFlag_[5] = true;
+        if(!pJson[pMasqueradingVector[5]].isNull())
+        {
+            imageLink_=std::make_shared<std::string>(pJson[pMasqueradingVector[5]].asString());
+        }
+    }
 }
 
 void Images::updateByJson(const Json::Value &pJson) noexcept(false)
@@ -235,6 +307,22 @@ void Images::updateByJson(const Json::Value &pJson) noexcept(false)
         if(!pJson["path"].isNull())
         {
             path_=std::make_shared<std::string>(pJson["path"].asString());
+        }
+    }
+    if(pJson.isMember("origin"))
+    {
+        dirtyFlag_[4] = true;
+        if(!pJson["origin"].isNull())
+        {
+            origin_=std::make_shared<int64_t>((int64_t)pJson["origin"].asInt64());
+        }
+    }
+    if(pJson.isMember("image_link"))
+    {
+        dirtyFlag_[5] = true;
+        if(!pJson["image_link"].isNull())
+        {
+            imageLink_=std::make_shared<std::string>(pJson["image_link"].asString());
         }
     }
 }
@@ -317,6 +405,50 @@ void Images::setPath(std::string &&pPath) noexcept
     dirtyFlag_[3] = true;
 }
 
+const int64_t &Images::getValueOfOrigin() const noexcept
+{
+    static const int64_t defaultValue = int64_t();
+    if(origin_)
+        return *origin_;
+    return defaultValue;
+}
+const std::shared_ptr<int64_t> &Images::getOrigin() const noexcept
+{
+    return origin_;
+}
+void Images::setOrigin(const int64_t &pOrigin) noexcept
+{
+    origin_ = std::make_shared<int64_t>(pOrigin);
+    dirtyFlag_[4] = true;
+}
+
+const std::string &Images::getValueOfImageLink() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(imageLink_)
+        return *imageLink_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &Images::getImageLink() const noexcept
+{
+    return imageLink_;
+}
+void Images::setImageLink(const std::string &pImageLink) noexcept
+{
+    imageLink_ = std::make_shared<std::string>(pImageLink);
+    dirtyFlag_[5] = true;
+}
+void Images::setImageLink(std::string &&pImageLink) noexcept
+{
+    imageLink_ = std::make_shared<std::string>(std::move(pImageLink));
+    dirtyFlag_[5] = true;
+}
+void Images::setImageLinkToNull() noexcept
+{
+    imageLink_.reset();
+    dirtyFlag_[5] = true;
+}
+
 void Images::updateId(const uint64_t id)
 {
     id_ = std::make_shared<int64_t>(static_cast<int64_t>(id));
@@ -327,7 +459,9 @@ const std::vector<std::string> &Images::insertColumns() noexcept
     static const std::vector<std::string> inCols={
         "image_type_id",
         "language_id",
-        "path"
+        "path",
+        "origin",
+        "image_link"
     };
     return inCols;
 }
@@ -367,6 +501,28 @@ void Images::outputArgs(drogon::orm::internal::SqlBinder &binder) const
             binder << nullptr;
         }
     }
+    if(dirtyFlag_[4])
+    {
+        if(getOrigin())
+        {
+            binder << getValueOfOrigin();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[5])
+    {
+        if(getImageLink())
+        {
+            binder << getValueOfImageLink();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
 }
 
 const std::vector<std::string> Images::updateColumns() const
@@ -383,6 +539,14 @@ const std::vector<std::string> Images::updateColumns() const
     if(dirtyFlag_[3])
     {
         ret.push_back(getColumnName(3));
+    }
+    if(dirtyFlag_[4])
+    {
+        ret.push_back(getColumnName(4));
+    }
+    if(dirtyFlag_[5])
+    {
+        ret.push_back(getColumnName(5));
     }
     return ret;
 }
@@ -416,6 +580,28 @@ void Images::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         if(getPath())
         {
             binder << getValueOfPath();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[4])
+    {
+        if(getOrigin())
+        {
+            binder << getValueOfOrigin();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[5])
+    {
+        if(getImageLink())
+        {
+            binder << getValueOfImageLink();
         }
         else
         {
@@ -458,6 +644,22 @@ Json::Value Images::toJson() const
     {
         ret["path"]=Json::Value();
     }
+    if(getOrigin())
+    {
+        ret["origin"]=(Json::Int64)getValueOfOrigin();
+    }
+    else
+    {
+        ret["origin"]=Json::Value();
+    }
+    if(getImageLink())
+    {
+        ret["image_link"]=getValueOfImageLink();
+    }
+    else
+    {
+        ret["image_link"]=Json::Value();
+    }
     return ret;
 }
 
@@ -470,7 +672,7 @@ Json::Value Images::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 4)
+    if(pMasqueradingVector.size() == 6)
     {
         if(!pMasqueradingVector[0].empty())
         {
@@ -516,6 +718,28 @@ Json::Value Images::toMasqueradedJson(
                 ret[pMasqueradingVector[3]]=Json::Value();
             }
         }
+        if(!pMasqueradingVector[4].empty())
+        {
+            if(getOrigin())
+            {
+                ret[pMasqueradingVector[4]]=(Json::Int64)getValueOfOrigin();
+            }
+            else
+            {
+                ret[pMasqueradingVector[4]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[5].empty())
+        {
+            if(getImageLink())
+            {
+                ret[pMasqueradingVector[5]]=getValueOfImageLink();
+            }
+            else
+            {
+                ret[pMasqueradingVector[5]]=Json::Value();
+            }
+        }
         return ret;
     }
     LOG_ERROR << "Masquerade failed";
@@ -550,6 +774,22 @@ Json::Value Images::toMasqueradedJson(
     else
     {
         ret["path"]=Json::Value();
+    }
+    if(getOrigin())
+    {
+        ret["origin"]=(Json::Int64)getValueOfOrigin();
+    }
+    else
+    {
+        ret["origin"]=Json::Value();
+    }
+    if(getImageLink())
+    {
+        ret["image_link"]=getValueOfImageLink();
+    }
+    else
+    {
+        ret["image_link"]=Json::Value();
     }
     return ret;
 }
@@ -591,13 +831,28 @@ bool Images::validateJsonForCreation(const Json::Value &pJson, std::string &err)
         err="The path column cannot be null";
         return false;
     }
+    if(pJson.isMember("origin"))
+    {
+        if(!validJsonOfField(4, "origin", pJson["origin"], err, true))
+            return false;
+    }
+    else
+    {
+        err="The origin column cannot be null";
+        return false;
+    }
+    if(pJson.isMember("image_link"))
+    {
+        if(!validJsonOfField(5, "image_link", pJson["image_link"], err, true))
+            return false;
+    }
     return true;
 }
 bool Images::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                                 const std::vector<std::string> &pMasqueradingVector,
                                                 std::string &err)
 {
-    if(pMasqueradingVector.size() != 4)
+    if(pMasqueradingVector.size() != 6)
     {
         err = "Bad masquerading vector";
         return false;
@@ -650,6 +905,27 @@ bool Images::validateMasqueradedJsonForCreation(const Json::Value &pJson,
             return false;
         }
       }
+      if(!pMasqueradingVector[4].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[4]))
+          {
+              if(!validJsonOfField(4, pMasqueradingVector[4], pJson[pMasqueradingVector[4]], err, true))
+                  return false;
+          }
+        else
+        {
+            err="The " + pMasqueradingVector[4] + " column cannot be null";
+            return false;
+        }
+      }
+      if(!pMasqueradingVector[5].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[5]))
+          {
+              if(!validJsonOfField(5, pMasqueradingVector[5], pJson[pMasqueradingVector[5]], err, true))
+                  return false;
+          }
+      }
     }
     catch(const Json::LogicError &e)
     {
@@ -685,13 +961,23 @@ bool Images::validateJsonForUpdate(const Json::Value &pJson, std::string &err)
         if(!validJsonOfField(3, "path", pJson["path"], err, false))
             return false;
     }
+    if(pJson.isMember("origin"))
+    {
+        if(!validJsonOfField(4, "origin", pJson["origin"], err, false))
+            return false;
+    }
+    if(pJson.isMember("image_link"))
+    {
+        if(!validJsonOfField(5, "image_link", pJson["image_link"], err, false))
+            return false;
+    }
     return true;
 }
 bool Images::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                               const std::vector<std::string> &pMasqueradingVector,
                                               std::string &err)
 {
-    if(pMasqueradingVector.size() != 4)
+    if(pMasqueradingVector.size() != 6)
     {
         err = "Bad masquerading vector";
         return false;
@@ -720,6 +1006,16 @@ bool Images::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
       if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
       {
           if(!validJsonOfField(3, pMasqueradingVector[3], pJson[pMasqueradingVector[3]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
+      {
+          if(!validJsonOfField(4, pMasqueradingVector[4], pJson[pMasqueradingVector[4]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[5].empty() && pJson.isMember(pMasqueradingVector[5]))
+      {
+          if(!validJsonOfField(5, pMasqueradingVector[5], pJson[pMasqueradingVector[5]], err, false))
               return false;
       }
     }
@@ -791,9 +1087,70 @@ bool Images::validJsonOfField(size_t index,
                 return false;
             }
             break;
+        case 4:
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+            if(!pJson.isInt64())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 5:
+            if(pJson.isNull())
+            {
+                return true;
+            }
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
         default:
             err="Internal error in the server";
             return false;
     }
     return true;
+}
+std::vector<std::pair<MediaItems,MediaItemImageAssignments>> Images::getMediaItems(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from media_items,media_item_image_assignments where media_item_image_assignments.image_id = ? and media_item_image_assignments.media_item_id = media_items.id";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *id_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    std::vector<std::pair<MediaItems,MediaItemImageAssignments>> ret;
+    ret.reserve(r.size());
+    for (auto const &row : r)
+    {
+        ret.emplace_back(std::pair<MediaItems,MediaItemImageAssignments>(
+            MediaItems(row),MediaItemImageAssignments(row,MediaItems::getColumnNumber())));
+    }
+    return ret;
+}
+
+void Images::getMediaItems(const DbClientPtr &clientPtr,
+                           const std::function<void(std::vector<std::pair<MediaItems,MediaItemImageAssignments>>)> &rcb,
+                           const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from media_items,media_item_image_assignments where media_item_image_assignments.image_id = ? and media_item_image_assignments.media_item_id = media_items.id";
+    *clientPtr << sql
+               << *id_
+               >> [rcb = std::move(rcb)](const Result &r){
+                   std::vector<std::pair<MediaItems,MediaItemImageAssignments>> ret;
+                   ret.reserve(r.size());
+                   for (auto const &row : r)
+                   {
+                       ret.emplace_back(std::pair<MediaItems,MediaItemImageAssignments>(
+                           MediaItems(row),MediaItemImageAssignments(row,MediaItems::getColumnNumber())));
+                   }
+                   rcb(ret);
+               }
+               >> ecb;
 }

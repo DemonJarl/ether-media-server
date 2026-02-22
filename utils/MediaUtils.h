@@ -77,12 +77,23 @@ struct LibraryScanSettings
     }
 };
 
+coro::task<std::optional<int64_t>> insertPath(const int64_t libraryID, const std::string& path);
+coro::task<bool> deletePath(const int64_t pathID);
+coro::task<std::vector<int64_t>> getMediaItemIDsByPath(const int64_t pathID);
+coro::task<std::vector<models::MediaItems>> getMediaItemsByPath(const int64_t pathID);
+coro::task<bool> deleteMediaItem(const models::MediaItems& mediaItem);
+coro::task<bool> deleteMediaItem(const int64_t mediaItemID);
+coro::task<std::vector<int64_t>> getImageIDsForMediaItem(const int64_t mediaItemID);
+coro::task<std::vector<int64_t>> getImageIDsForMediaItem(const int64_t mediaItemID, const std::vector<Language>& languages);
+coro::task<std::vector<models::Images>> getImagesForMediaItem(const int64_t mediaItemID);
+coro::task<std::vector<models::Images>> getImagesForMediaItem(const int64_t mediaItemID, const std::vector<Language>& languages);
+
 void scanLibrary(const int64_t, ScanMode mode, orm::DbClientPtr dbPointer = nullptr);
 void scanLibrary(const models::Libraries& library, ScanMode mode, orm::DbClientPtr dbPointer = nullptr);
 void scanLibraries(ScanMode mode, orm::DbClientPtr dbPointer = nullptr);
 void scanDirectory(fs::directory_entry directory);
-void analyzeFile(const fs::directory_entry& file, const LibraryScanSettings scanSettings, const int64_t pathId);
-void scanPath(const fs::path& path, const std::vector<std::string>& scanedPaths, const LibraryScanSettings scanSettings, const int64_t pathId);
+coro::task<void> analyzeFile(const fs::directory_entry& file, const LibraryScanSettings& scanSettings);
+void scanPath(const fs::path& path, const std::vector<std::string>& scanedPaths, const LibraryScanSettings& scanSettings);
 std::vector<models::MediaItemStreams> createStreams(AVFormatContext* ctx);
 coro::task<std::optional<int64_t>> insertMediaItemLocalization(const int64_t  mediaItemID, const Language language, const std::string& name, const std::string& description, const std::string& tagline, const bool original = false);
 coro::task<std::optional<models::MediaItemLocalizations>> findMediaItemLocalization(const int64_t mediaItemID, const Language language, orm::DbClientPtr dbPointer = nullptr);
@@ -97,25 +108,25 @@ void insertStreams(AVStream** streams, uint streamCount, int64_t mediaItemID, or
 models::MediaItemStreams parseStream(AVStream& stream, int64_t mediaItemID);
 void parseFileName(const std::string& fileName, std::string& name, int& season, int& episode, int& year);
 
-bool getDataFromMetadataProviders(const LibraryScanSettings scanSettings, const models::MediaItems& mediaItem);
+bool getDataFromMetadataProviders(const LibraryScanSettings& scanSettings, const models::MediaItems& mediaItem);
 
 coro::task<std::vector<models::ExternalMediaItemIds>> getMediaItemExternalID(const models::MediaItems& mediaItem, orm::DbClientPtr dbPointer = nullptr);
 coro::task<std::vector<models::ExternalMediaItemIds>> getMediaItemExternalID(const int64_t mediaItemID, orm::DbClientPtr dbPointer = nullptr);
 coro::task<std::vector<models::ExternalMediaItemIds>> getShowExternalIDFromSeason(const int64_t seasonMediaItemID, orm::DbClientPtr dbPointer = nullptr);
 
-coro::task<bool> getTVShowMetaData(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem);
-coro::task<bool> getTVSeasonMetaData(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem, const std::vector<models::ExternalMediaItemIds>& showExternalIDs);
-coro::task<bool> getTVEpisodeMetaData(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem);
-coro::task<bool> getMovieMetaData(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem);
+coro::task<bool> getTVShowMetaData(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem);
+coro::task<bool> getTVSeasonMetaData(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem, const std::vector<models::ExternalMediaItemIds>& showExternalIDs);
+coro::task<bool> getTVEpisodeMetaData(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem);
+coro::task<bool> getMovieMetaData(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem);
 
-coro::task<bool> getTVSeasonMetaDataTMDB(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem);
-coro::task<bool> getTVEpisodeMetaDataTMDB(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem, const int TMDBShowID);
-coro::task<bool> getMovieMetaDataTMDB(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem);
-coro::task<bool> getTVShowMetaDataTMDB(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem);
-coro::task<bool> getMovieMetaDataTMDB(const LibraryScanSettings scanSettings, const int TMDBid, const int64_t mediaItemID, const Language language, const bool original = false);
-coro::task<bool> getTVSeasonMetaDataTMDB(const LibraryScanSettings scanSettings, const int TMDBShowID, const int TMDBSeasonID, const int64_t mediaItemID, const Language language, const bool original = false);
-coro::task<bool> getTVShowMetaDataTMDB(const LibraryScanSettings scanSettings, const int TMDBid, const int64_t mediaItemID, const Language language, const bool original = false);
-coro::task<bool> getTVEpisodeMetaDataTMDB(const LibraryScanSettings scanSettings, const int TMDBShowID, const int season, const int episode, const int64_t mediaItemID, const Language language, const bool original = false);
+coro::task<bool> getTVSeasonMetaDataTMDB(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem);
+coro::task<bool> getTVEpisodeMetaDataTMDB(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem, const int TMDBShowID);
+coro::task<bool> getMovieMetaDataTMDB(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem);
+coro::task<bool> getTVShowMetaDataTMDB(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem);
+coro::task<bool> getMovieMetaDataTMDB(const LibraryScanSettings& scanSettings, const int TMDBid, const int64_t mediaItemID, const Language language, const bool original = false);
+coro::task<bool> getTVSeasonMetaDataTMDB(const LibraryScanSettings& scanSettings, const int TMDBShowID, const int TMDBSeasonID, const int64_t mediaItemID, const Language language, const bool original = false);
+coro::task<bool> getTVShowMetaDataTMDB(const LibraryScanSettings& scanSettings, const int TMDBid, const int64_t mediaItemID, const Language language, const bool original = false);
+coro::task<bool> getTVEpisodeMetaDataTMDB(const LibraryScanSettings& scanSettings, const int TMDBShowID, const int season, const int episode, const int64_t mediaItemID, const Language language, const bool original = false);
 
 coro::task<void> updateExtIds(const TMDBAPI::Models::PersonExternalIds& extIDs, const int64_t personID);
 coro::task<void> updateExtIds(const TMDBAPI::Models::MovieExternalIds& extIDs, const int64_t mediaItemID);
@@ -133,12 +144,12 @@ inline Language getOriginalLanguage(const int64_t mediaItemID)
     return static_cast<Language>(loc->getValueOfLanguageId());
 }
 
-coro::task<std::optional<int64_t>> getParentForEpisode(const std::string& showTitle, const int season, const std::string& releaseDate, const LibraryScanSettings scanSettings, orm::DbClientPtr dbPointer = nullptr);
+coro::task<std::optional<int64_t>> getParentForEpisode(const std::string& showTitle, const int season, const std::string& releaseDate, const LibraryScanSettings& scanSettings, orm::DbClientPtr dbPointer = nullptr);
 
-coro::task<std::optional<models::MediaItems>> createMediaItem(const LibraryScanSettings scanSettings, MediaType type, int64_t parentID, const std::string& parsedTitle, const std::string& path, const int season, const int episode, const std::string& releaseDate, orm::DbClientPtr dbPointer = nullptr);
-coro::task<std::optional<int64_t>> createTVShowMediaItem(const LibraryScanSettings scanSettings, const std::string& parsedTitle, const std::string& releaseDate, orm::DbClientPtr dbPointer = nullptr);
-coro::task<std::optional<int64_t>> createTVSeasonMediaItem(const LibraryScanSettings scanSettings, const int64_t parentID, const int season, const std::string& releaseDate, orm::DbClientPtr dbPointer = nullptr);
-coro::task<std::optional<int64_t>> createTVEpisodeMediaItem(const LibraryScanSettings scanSettings, const int64_t parentID, const std::string& parsedTitle, const std::string& path, const int season, const int episode,  const std::string& releaseDate, orm::DbClientPtr dbPointer = nullptr);
+coro::task<std::optional<models::MediaItems>> createMediaItem(const LibraryScanSettings& scanSettings, MediaType type, int64_t parentID, const std::string& parsedTitle, const std::string& path, const int season, const int episode, const std::string& releaseDate, orm::DbClientPtr dbPointer = nullptr);
+coro::task<std::optional<int64_t>> createTVShowMediaItem(const LibraryScanSettings& scanSettings, const std::string& parsedTitle, const std::string& releaseDate, orm::DbClientPtr dbPointer = nullptr);
+coro::task<std::optional<int64_t>> createTVSeasonMediaItem(const LibraryScanSettings& scanSettings, const int64_t parentID, const int season, const std::string& releaseDate, orm::DbClientPtr dbPointer = nullptr);
+coro::task<std::optional<int64_t>> createTVEpisodeMediaItem(const LibraryScanSettings& scanSettings, const int64_t parentID, const std::string& parsedTitle, const std::string& path, const int season, const int episode,  const std::string& releaseDate, orm::DbClientPtr dbPointer = nullptr);
 
 
 
@@ -178,11 +189,16 @@ coro::task<std::optional<int64_t>> insertMediaItemExternalID(const int64_t media
 coro::task<std::optional<int64_t>> insertPerson(const MetaDataProvider provider, const std::string& id, const Language language);
 coro::task<std::optional<int64_t>> insertPersonTMDB(const int id, const Language language);
 coro::task<std::optional<int64_t>> findOrInsertPerson(const MetaDataProvider provider, const std::string& id, const Language language, const std::string& name);
-
+coro::task<void> attachImageToPerson(const int64_t personID, const MetaDataProvider provider, const std::string& id);
 
 std::vector<models::MediaItems> findMediaItemsByPerson(const int64_t personID, const CreditType creditType);
 std::vector<models::MediaItems> findMediaItemsByProductionCompany(const int64_t productionCompanyID);
 std::vector<models::MediaItems> findMediaItemsByGenre(const std::vector<int64_t>& genreID);
+inline coro::task<std::optional<models::MediaItems>> findMediaItemByPath(const std::string& path)
+{
+    co_return (co_await findRecordByCriteriaORM<models::MediaItems>(orm::Criteria(models::MediaItems::Cols::_path, orm::CompareOperator::EQ, path)));
+}
+
 
 std::optional<models::People> findPersonORM(const std::string& name, const std::string& dateOfBirth, orm::DbClientPtr dbPointer = nullptr);
 std::optional<models::People> findPersonORM(const models::ExternalPeopleIds& extID, orm::DbClientPtr dbPointer = nullptr);
@@ -260,21 +276,25 @@ coro::task<std::string> getImageData(const std::string& imageLink);
 // Возвращает путь на файл
 coro::task<std::string>  createImageFromLink(const std::string& imageLink, const std::string& pathToDirectory);
 
-coro::task<std::optional<int64_t>> CreateAndInsertImage(const std::string& imageLink, const std::string& pathToDirectory, const ImageType type, const Language language);
+coro::task<std::optional<int64_t>> CreateAndInsertImage(const MetaDataProvider origin, const std::string& imageLink, const std::string& pathToDirectory, const ImageType type, const Language language);
 
-coro::task<std::optional<int64_t>> insertImage(const std::string& path, const ImageType type, const Language language);
+coro::task<std::optional<int64_t>> insertImage(const std::string& path, const ImageType type, const Language language, const MetaDataProvider origin, const std::string& imageLink);
 coro::task<void> assignImage(const int64_t imageID, const int64_t mediaItemID);
-coro::task<void> insertImage(const ImageType type, const Language language, const std::string& path, const int64_t mediaItemID);
-coro::task<void> insertImage(const LibraryScanSettings scanSettings, const ImageType type, const Language language, const std::string& imageLink, const int64_t mediaItemID);
+coro::task<void> insertImage(const ImageType type, const Language language, const std::string& path, const MetaDataProvider origin, const std::string& imageLink, const int64_t mediaItemID);
+coro::task<void> insertImage(const MetaDataProvider origin, const ImageType type, const Language language, const std::string& imageLink, const int64_t mediaItemID);
+
+inline coro::task<std::optional<models::Images>> findImageORM(const MetaDataProvider origin, const std::string& link)
+{
+    co_return (co_await findRecordByCriteriaORM<models::Images>(orm::Criteria(models::Images::Cols::_origin, orm::CompareOperator::EQ, enumToInt(origin))
+    && orm::Criteria(models::Images::Cols::_image_link, orm::CompareOperator::EQ, link)));
+}
 
 inline coro::task<bool> deleteImage(const models::Images& image)
 {
-    std::error_code ec;
     std::string imagePath = image.getValueOfPath();
     LOG_DEBUG<<std::format("Удаляем изображение по пути {}", imagePath);
-    fs::remove(imagePath, ec);
-    if (ec)
-        LOG_DEBUG<<std::format("Не удалось удалить изображение ошибка: {}", ec.message());
+    if (!deleteFile(imagePath))
+        LOG_DEBUG<<"Не удалось удалить изображение";
     co_return co_await deleteRecordByPrimaryKey<models::Images>(image.getPrimaryKey());
 }
 

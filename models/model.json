@@ -95,6 +95,21 @@
                 "target_table_alias": "",
                 "target_key": "library_id",
                 "enable_reverse": true
+            },
+            {
+                "type": "many to many",
+                "original_table_name": "media_items",
+                "original_table_alias": "",
+                "original_key": "id",
+                "pivot_table": {
+                    "table_name": "media_item_image_assignments",
+                    "original_key": "media_item_id",
+                    "target_key": "image_id"
+                },
+                "target_table_name": "images",
+                "target_table_alias": "",
+                "target_key": "id",
+                "enable_reverse": true
             }//,
             // {
             //     "type": "has many",

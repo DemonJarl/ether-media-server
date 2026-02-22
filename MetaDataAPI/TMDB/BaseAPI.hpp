@@ -153,10 +153,7 @@ protected:
             return std::unexpected(json.error());
         }
     }
-
-    //BaseAPI(const std::string key, const std::string language, const std::string region);
-    //BaseAPI(const std::string key);
-    //BaseAPI() = delete;
+    
     std::expected<Json::Value, APIError> get(std::string url);
 };
 

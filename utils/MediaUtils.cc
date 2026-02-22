@@ -118,6 +118,7 @@ using lru_cache_t = typename caches::fixed_sized_cache<Key, Value, caches::FIFOC
 // Потестировать создание прогресс бара через websockets на nuxt
 
 
+
 coro::mutex getParentMutex, findOrInsertPersonMutex, findOrInsertCreditMutex;
 std::array<char, 4> badSymbols{'-', '.', ',', '|'};
 
@@ -197,7 +198,7 @@ bool getSeasonEpisode(const std::string& str, int& season, int& episode)
         std::string::const_iterator searchStart( str.cbegin() );
         while ( std::regex_search( searchStart, str.cend(), matchResult, std::regex{"[SE][0-9]{1,2}", std::regex_constants::icase}) )
         {
-            std::string s = std::move(matchResult[0].str()); 
+            std::string s = matchResult[0].str(); 
             switch (tolower(s[0])) 
             {
                 case 'e':
@@ -260,7 +261,7 @@ void scanLibraries(ScanMode mode, orm::DbClientPtr dbPointer)
     try 
     {
         std::vector<models::Libraries> libraries =  mp.findAll();
-        threadPool.detach_loop(0, libraries.size(), [&libraries, &mode](const std::size_t i)
+        threadPool.detach_loop(0, libraries.size(), [libraries = std::move(libraries), mode](const std::size_t i)
         {
             scanLibrary(libraries[i], mode);
         });
@@ -297,7 +298,6 @@ void scanLibrary(const int64_t libraryID, ScanMode mode, orm::DbClientPtr dbPoin
 // Наверное стоит сделать callback для результатов и WebSocket апдейта
 void scanLibrary(const models::Libraries& library, ScanMode mode, orm::DbClientPtr dbPointer)
 {
-
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     if (!dbPointer)
         dbPointer = drogon::app().getDbClient();
@@ -315,95 +315,30 @@ void scanLibrary(const models::Libraries& library, ScanMode mode, orm::DbClientP
         LOG_DEBUG<<"Получено 0 путей";
         return;
     }
-    // Проверяем пути
-    // orm::Mapper<models::LibraryPaths> mapperPaths(dbPointer);
-    // orm::Mapper<models::MediaItems> mapperMedia(dbPointer);
-    // std::vector<std::future<size_t>> pathDeletionFutures;
-    // std::vector<std::future<std::vector<models::MediaItems>>> mediaFutures{pathCount};
-    // std::vector<models::MediaItems> mediaItems{};
-    // LOG_DEBUG<<"AAA??? ";
-    // std::erase_if(paths, [&mapperPaths, &pathDeletionFutures, &mediaFutures, &dbPointer](models::LibraryPaths& path)->bool
-    // {
-    //     if (!pathExists(*path.getPath()))
-    //     {
-    //         threadPool.detach_task([&path, &mapperPaths]{mapperPaths.deleteByPrimaryKey(path.getPrimaryKey());});
-    //         return true;
-    //     }
-    //     // Переписать
-    //     // mediaFutures.push_back(threadPool.submit_task([&path]{
-    //     //     return SQLMapperGetMediaItemsByPath(path.getValueOfPath());
-    //     // }));
-    //     //mediaFutures.push_back(std::async(std::launch::async, &models::LibraryPaths::getMediaItems, &path, dbClientPtr));
-    //     return false;
-    // });
+    std::erase_if(paths, [](models::LibraryPaths& path)->bool
+    {
+        if (!pathExists(*path.getPath()))
+        {
+            threadPool.detach_task([pathID = path.getPrimaryKey()]{coro::sync_wait(deletePath(pathID));});
+            return true;
+        }
+        return false;
+    });
 
-    // std::for_each(
-    //     std::execution::par_unseq, std::begin(mediaFutures), std::end(mediaFutures), [&mediaItems](std::future<std::vector<models::MediaItems>>& future){
-    //         try 
-    //         {
-    //             std::vector<models::MediaItems> tmpVec =  future.get();
-    //             const size_t vecSize = tmpVec.size();
-    //             if (vecSize > 0)
-    //             {
-    //                 //models::MediaItems tmpItem = tmpVec[0];
-    //                 LOG_DEBUG<<"По пути "<<*tmpVec[0].getId()<<" получено "<<vecSize<<" медиа предметов";
-    //                 mediaItems.insert(mediaItems.end(), std::move_iterator(tmpVec.begin()), std::move_iterator(tmpVec.end()));
-    //             }
-    //         } 
-    //         catch (orm::UnexpectedRows e) 
-    //         {
-    //             LOG_ERROR << "error:" << e.what();
-    //         }
-    //     });
-    // mediaFutures.clear();
-    // std::for_each(
-    //     std::execution::par_unseq, std::begin(pathDeletionFutures), std::end(pathDeletionFutures), [](std::future<size_t>& future){
-    //         try 
-    //         {
-    //             LOG_DEBUG<<"Удалено "<<future.get()<<" путей";
-    //         } 
-    //         catch (orm::UnexpectedRows e) 
-    //         {
-    //             LOG_ERROR << "error:" << e.what();
-    //         }
-    //     });
-    // pathDeletionFutures.clear();
-    // pathCount = paths.size(); 
-    // LOG_DEBUG<<"После фильтрации осталось "<<pathCount<<" путей";
-    // if (pathCount == 0)
-    //     return;
-    // // Получаем уже существующие медиа файлы
-    // size_t mediaCount = mediaItems.size();
-    // LOG_DEBUG<<"Получено медиафайлов: "<<mediaCount;
-    // LOG_DEBUG<<library.getValueOfSettings();
-    // Почему при вызове конструктора он умирает
-    //LibraryScanSettings scanSettings{};
     LibraryScanSettings scanSettings(library);
     // LOG_ERROR<<"AAA!!!!!!!1111!";
-    // const LibraryScanSettings scanSettings{};
+    // const LibraryScanSettings& scanSettings{};
     // std::vector<std::string> preExistingPaths{mediaCount};
     LOG_DEBUG<<std::format("scanSettings.MetaDataProvider: {}", enumToInt(scanSettings.metaDataProvider));
     std::vector<std::string> preExistingPaths;
 
-
-    // //  анализ полученых медиа файлов
-    // std::for_each(
-    //     std::execution::par_unseq, std::begin(mediaItems), std::end(mediaItems), [&preExistingPaths](models::MediaItems& mediaItem){
-    //         preExistingPaths.emplace_back(mediaItem.getValueOfPath());
-    //     });
-
-    // if (mode == ScanMode::MetaDataOnly)
-    // {
-    //     return;
-    // }
-    // std::vector<MediaItem> items{};
     std::vector<std::future<void>> scanFutures;
 
     for (auto& path : paths)
     {
         //LOG_DEBUG<<"AAA!!!!!!!! "<<path.getValueOfPath();
         scanFutures.emplace_back(scanThreadPool.submit_task([&preExistingPaths, &scanSettings, &path](){
-            scanPath(*path.getPath(), preExistingPaths, scanSettings, *path.getId());
+            scanPath(*path.getPath(), preExistingPaths, scanSettings);
         }));
         for (auto& future : scanFutures)
         {
@@ -415,11 +350,13 @@ void scanLibrary(const models::Libraries& library, ScanMode mode, orm::DbClientP
     LOG_ERROR<<std::format("Закончили сканирование за {} сек", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()/1000000.0);
     return;
 }
-void analyzeFile(const fs::directory_entry& file, const LibraryScanSettings scanSettings, const int64_t pathId)
+
+coro::task<void> analyzeFile(const fs::directory_entry& file, const LibraryScanSettings& scanSettings)
 {
     models::MediaItems item;
     auto path = file.path();
     LOG_DEBUG<<"Начали анализ файла "<<file.path();
+    auto mediaItem = co_await findMediaItemByPath(path);
     AVFormatContext *fmt_ctx = NULL;
     std::string title{},parsedSeriesTitle{};
     int episode{}, season{}, year{};
@@ -427,12 +364,42 @@ void analyzeFile(const fs::directory_entry& file, const LibraryScanSettings scan
     if ((retAv = avformat_open_input(&fmt_ctx, path.c_str(), NULL, NULL)))
     {
         LOG_ERROR<<"Не удалось открыть файл по пути "<<path;
-        return;
+        if (mediaItem)
+        {
+            co_await deleteMediaItem(mediaItem->getPrimaryKey());
+        }
+        co_return;
     }
-    if (path.empty()) 
-        item.setPathToNull();
-    else
-        item.setPath(path);
+    if (mediaItem)
+    {
+        LOG_INFO<<std::format("Файл по пути {} уже присутствует в библиотеке", path.string());
+        LOG_INFO<<std::format("MediaItemType {}", (*mediaItem).getValueOfMediaItemTypeId());
+        if (static_cast<MediaType>((*mediaItem).getValueOfMediaItemTypeId()) == MediaType::TVEpisode)
+        {
+            auto tvSeason = co_await findRecordByPrimaryKeyORM<models::MediaItems>((*mediaItem).getValueOfParentId());
+            if (!tvSeason.has_value())
+            {
+                co_return;
+            }
+            auto tvShow = co_await findRecordByPrimaryKeyORM<models::MediaItems>((*tvSeason).getValueOfParentId());
+            if (!tvShow.has_value())
+            {
+                co_return;
+            }
+            // if ((*mediaItem).getExternalMediaItemIds(app().getDbClient()).empty())
+            // {
+            co_await getTVShowMetaData(scanSettings, *tvShow);
+            co_await getTVSeasonMetaData(scanSettings, *tvSeason, (*tvSeason).getExternalMediaItemIds(app().getDbClient()));
+            // }
+            co_await getTVEpisodeMetaData(scanSettings, *mediaItem);
+        }
+        if (static_cast<MediaType>((*mediaItem).getValueOfMediaItemTypeId()) == MediaType::Movie)
+        {
+            co_await getMovieMetaData(scanSettings, *mediaItem);
+        }
+        co_return;
+    }
+    item.setPath(path);
     parseFileName(path.stem(), parsedSeriesTitle, season, episode, year);
     orm::Mapper<models::MediaItems> mp(app().getDbClient());
     if (episode != 0)
@@ -441,22 +408,22 @@ void analyzeFile(const fs::directory_entry& file, const LibraryScanSettings scan
         item.setSeason(season);
         item.setMediaItemTypeId(enumToInt(MediaType::TVEpisode));
         item.setParsedName(std::format("{} S{}E{}",parsedSeriesTitle, season, episode));
-        std::optional<int64_t> parentID = coro::sync_wait(getParentForEpisode(parsedSeriesTitle, season, "", scanSettings));
+        std::optional<int64_t> parentID = co_await getParentForEpisode(parsedSeriesTitle, season, "", scanSettings);
         if (!parentID.has_value())
         {
             LOG_ERROR<<std::format("Ошибка нахождения родителя для эпизода ТВ шоу {}", parsedSeriesTitle);
             avformat_close_input(&fmt_ctx); // важно!
-            return;
+            co_return;
         }
         item.setParentId(*parentID);
         item.setLastUpdated(getCurrentDateTime());
-        if (!coro::sync_wait(insertRecord(item)).has_value())
+        if (!co_await insertRecord(item))
         {
             LOG_ERROR<<std::format("Ошибка вставки media_items: {}", item.getValueOfPath());
             avformat_close_input(&fmt_ctx); // важно!
-            return;
+            co_return;
         }
-        coro::sync_wait(getTVEpisodeMetaData(scanSettings, item));
+       co_await getTVEpisodeMetaData(scanSettings, item);
     }
     else 
     {
@@ -465,19 +432,19 @@ void analyzeFile(const fs::directory_entry& file, const LibraryScanSettings scan
         item.setMediaItemTypeId(enumToInt(MediaType::Movie));
         item.setParsedName(parsedSeriesTitle);
         item.setLastUpdated(getCurrentDateTime());
-        if (!coro::sync_wait(insertRecord(item)).has_value())
+        if (!co_await insertRecord(item))
         {
             LOG_ERROR<<std::format("Ошибка вставки media_items: {}", item.getValueOfPath());
             avformat_close_input(&fmt_ctx); // важно!
-            return;
+            co_return;
         }
-        coro::sync_wait(getMovieMetaData(scanSettings, item));
+        co_await getMovieMetaData(scanSettings, item);
         // просто получить информацию о фильме
     }
     insertStreams(fmt_ctx->streams, fmt_ctx->nb_streams, item.getPrimaryKey());
-    coro::sync_wait(assignMediaItemToLibraryByPath(item.getPrimaryKey(), path));
+    co_await assignMediaItemToLibraryByPath(item.getPrimaryKey(), path);
     avformat_close_input(&fmt_ctx); // важно!
-    return;
+    co_return;
 }
 
 
@@ -512,12 +479,14 @@ coro::task<void> assignMediaItemToLibraryByID(const int64_t mediaItemID, const i
 }
 
 
-void scanPath(const fs::path& path, const std::vector<std::string>& scanedPaths, const LibraryScanSettings scanSettings, const int64_t pathId)
+void scanPath(const fs::path& path, const std::vector<std::string>& scanedPaths, const LibraryScanSettings& scanSettings)
 {
     LOG_DEBUG<<"scanPath "<<path.string();
     std::vector<std::future<void>> analyzisFutures{};
     for (const fs::directory_entry& entry : fs::recursive_directory_iterator{path, std::filesystem::directory_options::skip_permission_denied})
     {
+        if (stopScanning)
+            break;
         if (entry.is_directory())
             continue;
         //LOG_DEBUG <<"Сканирование директории";
@@ -527,8 +496,8 @@ void scanPath(const fs::path& path, const std::vector<std::string>& scanedPaths,
             continue;   
         }
         LOG_DEBUG<<std::format("Сканирование директории {}", filePath.string());
-        analyzisFutures.emplace_back(threadPool.submit_task([entry, &scanSettings, pathId](){
-            analyzeFile(entry, scanSettings, pathId);
+        analyzisFutures.emplace_back(threadPool.submit_task([entry, &scanSettings](){
+            coro::sync_wait(analyzeFile(entry, scanSettings));
         }));
         // analyzeFile(entry, scanSettings, pathId);
         // break;
@@ -719,7 +688,7 @@ coro::task<std::optional<int64_t>> findSeasonByExternalID(const std::vector<std:
 }
 
 // подумать что делать если несколько копий одной серии
-coro::task<std::optional<int64_t>> getParentForEpisode(const std::string& showTitle, const int season, const std::string& releaseDate, const LibraryScanSettings scanSettings, orm::DbClientPtr dbPointer)
+coro::task<std::optional<int64_t>> getParentForEpisode(const std::string& showTitle, const int season, const std::string& releaseDate, const LibraryScanSettings& scanSettings, orm::DbClientPtr dbPointer)
 {
     // std::lock_guard lockMutex(getParentMutex);
     auto lock = co_await getParentMutex.scoped_lock();
@@ -840,7 +809,7 @@ void parseFileName(const std::string& fileName, std::string& name, int& season, 
 }
 
 
-coro::task<std::optional<models::MediaItems>> createMediaItem(const LibraryScanSettings scanSettings, MediaType type, int64_t parentID, const std::string& parsedTitle, const std::string& path, const int season, const int episode, const std::string& releaseDate, orm::DbClientPtr dbPointer)
+coro::task<std::optional<models::MediaItems>> createMediaItem(const LibraryScanSettings& scanSettings, MediaType type, int64_t parentID, const std::string& parsedTitle, const std::string& path, const int season, const int episode, const std::string& releaseDate, orm::DbClientPtr dbPointer)
 {
     // std::lock_guard<std::mutex> lockMutex(createSeasonMutex);
     LOG_DEBUG<<std::format("CreateMediaItem({}, {}, {}, {}, {}, {})", enumToInt(type), parentID, parsedTitle, season, episode, releaseDate);
@@ -929,7 +898,7 @@ coro::task<std::optional<models::MediaItems>> createMediaItem(const LibraryScanS
     co_return {};
 }
 
-coro::task<std::optional<int64_t>> createTVShowMediaItem(const LibraryScanSettings scanSettings, const std::string& parsedTitle, const std::string& releaseDate, orm::DbClientPtr dbPointer)
+coro::task<std::optional<int64_t>> createTVShowMediaItem(const LibraryScanSettings& scanSettings, const std::string& parsedTitle, const std::string& releaseDate, orm::DbClientPtr dbPointer)
 {
     LOG_DEBUG<<std::format("createTVShowMediaItem: {}, {}", parsedTitle, releaseDate);
     if (!dbPointer)
@@ -942,7 +911,7 @@ coro::task<std::optional<int64_t>> createTVShowMediaItem(const LibraryScanSettin
     co_return tvShow->getPrimaryKey();
 }
 
-coro::task<std::optional<int64_t>> createTVSeasonMediaItem(const LibraryScanSettings scanSettings, const int64_t parentID, const int season,  const std::string& releaseDate, orm::DbClientPtr dbPointer)
+coro::task<std::optional<int64_t>> createTVSeasonMediaItem(const LibraryScanSettings& scanSettings, const int64_t parentID, const int season,  const std::string& releaseDate, orm::DbClientPtr dbPointer)
 {
     if (!dbPointer)
        dbPointer = drogon::app().getDbClient();
@@ -1010,7 +979,7 @@ bool extIDInVec(const std::vector<models::ExternalMediaItemIds>& showExternalID,
     }
 }
 
-coro::task<bool> getTVSeasonMetaDataTMDB(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem, const int showID)
+coro::task<bool> getTVSeasonMetaDataTMDB(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem, const int showID)
 {
     bool parsed = false;
     int seasonNum = mediaItem.getValueOfSeason();
@@ -1049,7 +1018,7 @@ coro::task<bool> getTVSeasonMetaDataTMDB(const LibraryScanSettings scanSettings,
     co_return parsed;
 }
 
-coro::task<bool> getTVEpisodeMetaDataTMDB(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem, const int TMDBShowID)
+coro::task<bool> getTVEpisodeMetaDataTMDB(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem, const int TMDBShowID)
 {
     bool parsed = false;
     int season, episode;
@@ -1130,7 +1099,7 @@ coro::task<bool> getTVEpisodeMetaDataTMDB(const LibraryScanSettings scanSettings
     co_return parsed;
 }
 
-coro::task<bool> getTVEpisodeMetaDataTMDB(const LibraryScanSettings scanSettings, const int TMDBShowID, const int season, const int episode, const int64_t mediaItemID, const Language language, const bool original)
+coro::task<bool> getTVEpisodeMetaDataTMDB(const LibraryScanSettings& scanSettings, const int TMDBShowID, const int season, const int episode, const int64_t mediaItemID, const Language language, const bool original)
 {
     std::vector<std::future<void>> futures;
     futures.reserve(3);
@@ -1147,9 +1116,9 @@ coro::task<bool> getTVEpisodeMetaDataTMDB(const LibraryScanSettings scanSettings
     }
     co_await insertMediaItemLocalization(mediaItemID, language, tvEpisodeDetails->details.name, tvEpisodeDetails->details.overview, "", original);
 
-    if (tvEpisodeDetails->credits.has_value() && scanSettings.collectEpisodeCredits)
+    if ((*tvEpisodeDetails).credits.has_value() && scanSettings.collectEpisodeCredits)
     {
-        co_await insertCredits(tvEpisodeDetails->credits->cast, language, mediaItemID);
+        co_await insertCredits((*(*tvEpisodeDetails).credits).cast, language, mediaItemID);
         // co_await insertCredits(tvEpisodeDetails->credits->crew, language, mediaItemID);
     }
     //  if (!tvEpisodeDetails->details.crew.empty())
@@ -1171,8 +1140,9 @@ coro::task<bool> getTVEpisodeMetaDataTMDB(const LibraryScanSettings scanSettings
     // }
     if ((*tvEpisodeDetails).images.has_value())
     {
+        LOG_INFO<<"still size "<<(*(*tvEpisodeDetails).images).stills.size();
         if ((*(*tvEpisodeDetails).images).stills.size() > 0 && !(co_await hasImage(mediaItemID, ImageType::Still, language)))
-            co_await insertImage(scanSettings, ImageType::Still, language, (*(*tvEpisodeDetails).images).stills[0].getImageLink(TMDBAPI::StillSize::Original), mediaItemID);
+            co_await insertImage(MetaDataProvider::TMDB, ImageType::Still, language, (*(*tvEpisodeDetails).images).stills[0].getImageLink(TMDBAPI::StillSize::Original), mediaItemID);
     }
 
     for (auto& future : futures)
@@ -1180,7 +1150,7 @@ coro::task<bool> getTVEpisodeMetaDataTMDB(const LibraryScanSettings scanSettings
     co_return true;
 }
 
-coro::task<bool> getTVShowMetaDataTMDB(const LibraryScanSettings scanSettings, const int TMDBid, const int64_t mediaItemID, const Language language, const bool original)
+coro::task<bool> getTVShowMetaDataTMDB(const LibraryScanSettings& scanSettings, const int TMDBid, const int64_t mediaItemID, const Language language, const bool original)
 {
     LOG_DEBUG<<std::format("getTVShowMetaDataTMDB({}, {}, {})", TMDBid, mediaItemID, enumToInt(language));
 
@@ -1214,10 +1184,10 @@ coro::task<bool> getTVShowMetaDataTMDB(const LibraryScanSettings scanSettings, c
     {
 
         if ((*(*tvShowDetails).images).backdrops.size() > 0  && !(co_await hasImage(mediaItemID, ImageType::Background, language)))
-                co_await insertImage(scanSettings, ImageType::Background, language, (*(*tvShowDetails).images).backdrops[0].getImageLink(TMDBAPI::BackdropSize::Original), mediaItemID);
+                co_await insertImage(MetaDataProvider::TMDB, ImageType::Background, language, (*(*tvShowDetails).images).backdrops[0].getImageLink(TMDBAPI::BackdropSize::Original), mediaItemID);
         if ((*(*tvShowDetails).images).posters.size() > 0  && !(co_await hasImage(mediaItemID, ImageType::Poster, language)))
         {
-            co_await insertImage(scanSettings, ImageType::Poster, language, (*(*tvShowDetails).images).posters[0].getImageLink(TMDBAPI::PosterSize::Original), mediaItemID);
+            co_await insertImage(MetaDataProvider::TMDB, ImageType::Poster, language, (*(*tvShowDetails).images).posters[0].getImageLink(TMDBAPI::PosterSize::Original), mediaItemID);
         }
             
     }
@@ -1238,7 +1208,7 @@ coro::task<bool> getTVShowMetaDataTMDB(const LibraryScanSettings scanSettings, c
     co_return true;
 }
 
-coro::task<bool> getTVSeasonMetaDataTMDB(const LibraryScanSettings scanSettings, const int TMDBShowID, const int TMDBSeasonID, const int64_t mediaItemID, const Language language, const bool original)
+coro::task<bool> getTVSeasonMetaDataTMDB(const LibraryScanSettings& scanSettings, const int TMDBShowID, const int TMDBSeasonID, const int64_t mediaItemID, const Language language, const bool original)
 {
     LOG_DEBUG<<std::format("getTVSeasonMetaDataTMDB({}, {}, {}, {})", TMDBShowID, TMDBSeasonID, mediaItemID, enumToInt(language));
     auto seasonDetails = TMDBAPI::Endpoints::TVSeason(TMDBShowID, TMDBSeasonID).getDetails(languageToTMDBLanguage(language), TMDBAPI::TVSeasonAppendToResponse::Credits);
@@ -1262,12 +1232,12 @@ coro::task<bool> getTVSeasonMetaDataTMDB(const LibraryScanSettings scanSettings,
     if ((*seasonDetails).images.has_value())
     {
         if ((*(*seasonDetails).images).posters.size() > 0 && !(co_await hasImage(mediaItemID, ImageType::Poster, language)))
-            co_await insertImage(scanSettings, ImageType::Poster, language, (*(*seasonDetails).images).posters[0].getImageLink(TMDBAPI::PosterSize::Original), mediaItemID);
+            co_await insertImage(MetaDataProvider::TMDB, ImageType::Poster, language, (*(*seasonDetails).images).posters[0].getImageLink(TMDBAPI::PosterSize::Original), mediaItemID);
     }
     co_return true;
 }
 
-coro::task<bool> getMovieMetaDataTMDB(const LibraryScanSettings scanSettings, const int TMDBid, const int64_t mediaItemID, const Language language, const bool original)
+coro::task<bool> getMovieMetaDataTMDB(const LibraryScanSettings& scanSettings, const int TMDBid, const int64_t mediaItemID, const Language language, const bool original)
 {
     LOG_DEBUG<<std::format("getMovieMetaDataTMDB({}, {}, {})", TMDBid, mediaItemID, enumToInt(language));
     std::vector<std::future<void>> futures;
@@ -1294,18 +1264,18 @@ coro::task<bool> getMovieMetaDataTMDB(const LibraryScanSettings scanSettings, co
     if ((*movieDetails).images.has_value())
     {
         if ((*(*movieDetails).images).posters.size() > 0 && !(co_await hasImage(mediaItemID, ImageType::Poster, language)))
-            co_await insertImage(scanSettings, ImageType::Poster, language, (*(*movieDetails).images).posters[0].getImageLink(TMDBAPI::PosterSize::Original), mediaItemID);
+            co_await insertImage(MetaDataProvider::TMDB, ImageType::Poster, language, (*(*movieDetails).images).posters[0].getImageLink(TMDBAPI::PosterSize::Original), mediaItemID);
         if ((*(*movieDetails).images).logos.size() > 0 && !(co_await hasImage(mediaItemID, ImageType::Logo, language)))
-            co_await insertImage(scanSettings, ImageType::Logo, language, (*(*movieDetails).images).logos[0].getImageLink(TMDBAPI::PosterSize::Original), mediaItemID);
+            co_await insertImage(MetaDataProvider::TMDB, ImageType::Logo, language, (*(*movieDetails).images).logos[0].getImageLink(TMDBAPI::PosterSize::Original), mediaItemID);
         if ((*(*movieDetails).images).backdrops.size() > 0 && !(co_await hasImage(mediaItemID, ImageType::Background, language)))
-            co_await insertImage(scanSettings, ImageType::Background, language, (*(*movieDetails).images).backdrops[0].getImageLink(TMDBAPI::PosterSize::Original), mediaItemID);
+            co_await insertImage(MetaDataProvider::TMDB, ImageType::Background, language, (*(*movieDetails).images).backdrops[0].getImageLink(TMDBAPI::PosterSize::Original), mediaItemID);
     }
     for (auto& future : futures)
         future.wait();
     co_return true;
 }
 
-coro::task<bool> getMovieMetaDataTMDB(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem)
+coro::task<bool> getMovieMetaDataTMDB(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem)
 {
     bool parsed = false;
     auto search = TMDBAPI::Endpoints::SearchMovie(mediaItem.getValueOfParsedName(), scanSettings.includeAdult);
@@ -1403,7 +1373,7 @@ coro::task<void> updateExtIds(const TMDBAPI::Models::TVEpisodeExternalIds& extID
     co_return;
 }
 
-coro::task<bool> getTVShowMetaDataTMDB(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem)
+coro::task<bool> getTVShowMetaDataTMDB(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem)
 {
     bool parsed = false;
 
@@ -1458,7 +1428,7 @@ coro::task<bool> getTVShowMetaDataTMDB(const LibraryScanSettings scanSettings, m
 
 
 
-coro::task<bool> getTVSeasonMetaData(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem, const std::vector<models::ExternalMediaItemIds>& showExternalIDs)
+coro::task<bool> getTVSeasonMetaData(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem, const std::vector<models::ExternalMediaItemIds>& showExternalIDs)
 {
     if (scanSettings.metaDataProvider == MetaDataProvider::Local)
         co_return true;
@@ -1476,7 +1446,7 @@ coro::task<bool> getTVSeasonMetaData(const LibraryScanSettings scanSettings, mod
     co_return parsed;
 }
 
-coro::task<bool> getTVShowMetaData(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem)
+coro::task<bool> getTVShowMetaData(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem)
 {
     if (scanSettings.metaDataProvider == MetaDataProvider::Local)
         co_return true;
@@ -1592,7 +1562,7 @@ coro::task<bool> isGenreAssigned(const int64_t genreID, const int64_t mediaItemI
      && orm::Criteria(models::GenreAssignments::Cols::_media_item_id, orm::CompareOperator::EQ, mediaItemID), dbPointer);
 }
 
-coro::task<bool> getTVEpisodeMetaData(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem)
+coro::task<bool> getTVEpisodeMetaData(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem)
 {
     if (scanSettings.metaDataProvider == MetaDataProvider::Local)
         co_return true;
@@ -1610,7 +1580,7 @@ coro::task<bool> getTVEpisodeMetaData(const LibraryScanSettings scanSettings, mo
     co_return parsed;
 }
 
-coro::task<bool>  getMovieMetaData(const LibraryScanSettings scanSettings, models::MediaItems& mediaItem)
+coro::task<bool> getMovieMetaData(const LibraryScanSettings& scanSettings, models::MediaItems& mediaItem)
 {
     if (scanSettings.metaDataProvider == MetaDataProvider::Local)
         co_return true;
@@ -1806,10 +1776,43 @@ coro::task<std::optional<int64_t>> findOrInsertPerson(const MetaDataProvider pro
     if (personID.has_value())
     {
         if (hasFlag(provider, MetaDataProvider::TMDB))
+        {
             metaDataThreadPool.detach_task([personID, id, language]{coro::sync_wait(localizePersonTMDB(*personID, std::stoi(id), language));});
+            metaDataThreadPool.detach_task([personID, id, provider]{coro::sync_wait(attachImageToPerson(*personID, provider, id));});
+        }
         co_return personID;
     }
     co_return co_await insertPerson(provider, id, language);
+}
+
+coro::task<void> attachImageToPerson(const int64_t personID, const MetaDataProvider provider, const std::string& id)
+{
+    if (id.empty())
+        co_return;
+    auto person = co_await findRecordByPrimaryKeyORM<models::People>(personID);
+    if (!person)
+        co_return;
+    if (person->getPortretId())
+        co_return;
+    switch (provider) 
+    {
+        case MetaDataProvider::TMDB:
+            auto personDetails = TMDBAPI::Endpoints::People(std::stoi(id)).getDetails();
+            if (!personDetails)
+            {
+                LOG_ERROR<<std::format("personImages error {}", enumToInt(personDetails.error()));
+                co_return;
+            }
+            if ((*personDetails).details.profilePath.empty())
+                co_return;
+            auto imageID = co_await CreateAndInsertImage(MetaDataProvider::TMDB, TMDBAPI::secureImageURL + "/original" + (*personDetails).details.profilePath, ServerSettingsManager::Instance().getImageSaveDirectory(), ImageType::Portrait, Language::xx);
+            if (!imageID)
+                co_return;
+            person->setPortretId(*imageID);
+            co_await updateRecord(*person);
+            co_return;
+    }
+    co_return;
 }
 
 coro::task<std::optional<int64_t>> insertPerson(const MetaDataProvider provider, const std::string& id, const Language language)
@@ -1844,30 +1847,22 @@ coro::task<std::optional<int64_t>> insertPersonTMDB(const int id, const Language
     person.setDateOfBirth(details->details.birthday);
     person.setDateOfDeath(details->details.deathday);
     //person.setOriginalName(details->name);
-    if (!details->details.profilePath.empty())
-    {
-        auto imageID = co_await CreateAndInsertImage(TMDBAPI::secureImageURL + "/original" + details->details.profilePath, ServerSettingsManager::Instance().getImageSaveDirectory(), ImageType::Portrait, language);
-        if (imageID)
-            person.setPortretId(*imageID);
-    }
     auto ret = co_await insertRecord(person);
+
+    if (!(*details).details.profilePath.empty())
+    {
+        metaDataThreadPool.detach_task([profilePath = std::move((*details).details.profilePath)]{coro::sync_wait(CreateAndInsertImage(MetaDataProvider::TMDB, TMDBAPI::secureImageURL + "/original" + profilePath, ServerSettingsManager::Instance().getImageSaveDirectory(), ImageType::Portrait, Language::xx));});
+
+    }
     if (!ret.has_value())
     {
         LOG_ERROR<<std::format("Не удалось вставить человека с id {}", id);
         co_return {};
     }
-    // details->details.profilePath
     co_await insertPersonLocalization(*ret, (*details).details.name, (*details).details.biography, language);
-
-    // threadPool.detach_task([ret, id]{
-    //     insertPersonExternalID(ret, MetaDataProvider::TMDB, std::to_string(id));
-    // });
 
     if ((*details).externalIDs.has_value())
         co_await updateExtIds((*(*details).externalIDs), *ret);
-    // threadPool.detach_task([id, ret]{
-    //     localizePersonTMDB(ret, id);
-    // });
     co_return ret;
 }
 
@@ -2007,6 +2002,7 @@ coro::task<void> insertCredit(const TMDBAPI::Models::CastCredit& cast, Language 
         LOG_ERROR<<std::format("Не удалось найти или вставить человека с ID {}", cast.id);
         co_return; 
     }
+
     auto creditID = co_await findOrInsertCredit(mediaItemID, *personID, CreditType::Actor, MetaDataProvider::TMDB, cast.creditID);
     
     if (!creditID.has_value())
@@ -2130,8 +2126,8 @@ coro::task<std::string> createImageFromLink(const std::string& imageLink, const 
     std::string filePath = pathToDirectory + ((imageLink[0] == '/') ? "" : "/") + imageLink.substr(imageLink.rfind("/")+1);
     if (pathExists(filePath))
     {
-        LOG_INFO<<"Файл уже существует";
-        co_return {};
+        LOG_INFO<<std::format("Файл уже существует {}", filePath);
+        co_return filePath;
     }
     LOG_INFO<<std::format("filePath {}", filePath);
     std::string imageData = co_await getImageData(imageLink);
@@ -2143,17 +2139,37 @@ coro::task<std::string> createImageFromLink(const std::string& imageLink, const 
     co_return filePath;
 }
 
-coro::task<std::optional<int64_t>> CreateAndInsertImage(const std::string& imageLink, const std::string& pathToDirectory, const ImageType type, const Language language)
+
+
+
+coro::task<std::optional<int64_t>> CreateAndInsertImage(const MetaDataProvider origin, const std::string& imageLink, const std::string& pathToDirectory, const ImageType type, const Language language)
 {
-    LOG_DEBUG<<std::format("CreateAndInsertImage({}, {}, {}, {})", imageLink, pathToDirectory, enumToInt(type), enumToInt(language));
-    std::string imagePath = co_await createImageFromLink(imageLink, pathToDirectory);
+    LOG_DEBUG<<std::format("CreateAndInsertImage({}, {}, {}, {}, {})", enumToInt(origin), imageLink, pathToDirectory, enumToInt(type), enumToInt(language));
+    auto image = co_await findImageORM(origin, imageLink);
+    std::string imagePath{};
+    if (image)
+    {
+        if (pathExists((*image).getValueOfPath()))
+            co_return (*image).getPrimaryKey();
+        imagePath = co_await createImageFromLink(imageLink, pathToDirectory);
+        if (imagePath.empty())
+        {
+            co_await deleteImage(*image);
+            co_return {};
+        }
+
+        (*image).setPath(imagePath);
+        co_await updateRecord(*image);
+        co_return (*image).getPrimaryKey();
+    }
+    imagePath = co_await createImageFromLink(imageLink, pathToDirectory);
     if (imagePath.empty())
         co_return {};
-    co_return co_await insertImage(imagePath, type, language);
+    co_return co_await insertImage(imagePath, type, language, origin, imageLink);
 }
 
 
-coro::task<std::optional<int64_t>> insertImage(const std::string& path, const ImageType type, const Language language)
+coro::task<std::optional<int64_t>> insertImage(const std::string& path, const ImageType type, const Language language, const MetaDataProvider origin, const std::string& imageLink)
 {
     if (path.empty())
         co_return {};
@@ -2161,9 +2177,9 @@ coro::task<std::optional<int64_t>> insertImage(const std::string& path, const Im
     image.setLanguageId(enumToInt(language));
     image.setImageTypeId(enumToInt(type));
     image.setPath(path);
-    if (co_await insertRecord(image))
-        co_return image.getPrimaryKey();
-    co_return {};
+    image.setOrigin(enumToInt(origin));
+    image.setImageLink(imageLink);
+    co_return co_await insertRecord(image);
 }
 
 coro::task<void> assignImage(const int64_t imageID, const int64_t mediaItemID)
@@ -2175,22 +2191,23 @@ coro::task<void> assignImage(const int64_t imageID, const int64_t mediaItemID)
     co_return;
 }
 
-coro::task<void> insertImage(const ImageType type, const Language language, const std::string& path, const int64_t mediaItemID)
+coro::task<void> insertImage(const ImageType type, const Language language, const std::string& path, const MetaDataProvider origin, const std::string& imageLink, const int64_t mediaItemID)
 {
     if (path.empty())
         co_return;
-    auto imageID = co_await insertImage(path, type, language);
+    auto imageID = co_await insertImage(path, type, language, origin, imageLink);
     if (!imageID.has_value())
         co_return;
     co_await assignImage(*imageID, mediaItemID);
 }
 
-coro::task<void> insertImage(const LibraryScanSettings scanSettings, const ImageType type, const Language language, const std::string& imageLink, const int64_t mediaItemID)
+coro::task<void> insertImage(const MetaDataProvider origin, const ImageType type, const Language language, const std::string& imageLink, const int64_t mediaItemID)
 {
-    auto imageID = co_await CreateAndInsertImage(imageLink, ServerSettingsManager::Instance().getImageSaveDirectory(), type, language);
+    auto imageID = co_await CreateAndInsertImage(origin, imageLink, ServerSettingsManager::Instance().getImageSaveDirectory(), type, language);
     if (!imageID.has_value())
         co_return;
     co_await assignImage(*imageID, mediaItemID);
+    co_return;
 }
 
 
@@ -2530,4 +2547,107 @@ Language TMDBLanguageToLanguage(const TMDBAPI::Languages language)
             return Language::ko;
     }
     return Language::ru;
+}
+
+coro::task<std::optional<int64_t>> insertPath(const int64_t libraryID, const std::string& path);
+coro::task<bool> deletePath(const int64_t pathID)
+{
+    auto mediaItemIDs = co_await getMediaItemIDsByPath(pathID);
+    if (mediaItemIDs.empty())
+        co_return true;
+    for (const auto id : mediaItemIDs)
+    {
+        if (!co_await deleteMediaItem(id))
+            LOG_INFO<<std::format("Не удалось удалить медиа контент с id {}", id);
+    }
+    co_return true;
+}
+
+coro::task<std::vector<int64_t>> getMediaItemIDsByPath(const int64_t pathID)
+{
+    std::vector<int64_t> ret{};
+    auto res = co_await execSQL(nullptr, "", pathID);
+    if (!res)
+        co_return ret;
+    ret.reserve((*res).size());
+    for (auto& row : (*res))
+    {
+        ret.emplace_back(row["media_item_id"].as<int64_t>());
+    }
+    co_return ret;
+}
+
+coro::task<std::vector<models::MediaItems>> getMediaItemsByPath(const int64_t pathID)
+{
+    auto ids = co_await getMediaItemIDsByPath(pathID);
+    std::vector<models::MediaItems> ret{};
+    auto size = ids.size();
+    if (size == 0)
+        co_return ret;
+    ret.reserve(size);
+    for (auto id : ids)
+    {
+        auto mediaItem = co_await findRecordByPrimaryKeyORM<models::MediaItems>(id);
+        if (!mediaItem)
+            continue;
+        ret.emplace_back(std::move(*mediaItem));
+    }
+    co_return ret;
+}
+
+coro::task<bool> deleteMediaItem(const models::MediaItems& mediaItem)
+{
+    auto images = co_await getImagesForMediaItem(mediaItem.getPrimaryKey()); 
+
+    if (!images.empty())
+    {
+        for (auto& image : images)
+            co_await deleteImage(image);
+    }
+
+    co_return co_await deleteRecordByPrimaryKey<models::MediaItems>(mediaItem.getPrimaryKey());
+}
+
+coro::task<bool> deleteMediaItem(const int64_t mediaItemID)
+{
+    auto mediaItem = co_await findRecordByPrimaryKeyORM<models::MediaItems>(mediaItemID);
+    if (!mediaItem.has_value())
+        co_return false;
+    co_return co_await deleteMediaItem(*mediaItem);
+}
+
+coro::task<std::vector<int64_t>> getImageIDsForMediaItem(const int64_t mediaItemID)
+{
+    co_return {};
+}
+
+coro::task<std::vector<int64_t>> getImageIDsForMediaItem(const int64_t mediaItemID, const std::vector<Language>& languages)
+{
+    co_return {};
+}
+
+coro::task<std::vector<models::Images>> getImagesForMediaItem(const int64_t mediaItemID)
+{
+    auto dbPointer = app().getDbClient();
+    auto mediaItem = co_await findRecordByPrimaryKeyORM<models::MediaItems>(mediaItemID, dbPointer);
+    if (!mediaItem.has_value())
+        co_return {};
+    auto images = (*mediaItem).getImages(dbPointer);
+    std::vector<models::Images> ret{};
+    ret.reserve(images.size());
+    for (auto& imageAssignment : images)
+        ret.emplace_back(std::move(imageAssignment.first));
+    co_return ret;
+}
+
+coro::task<std::vector<models::Images>> getImagesForMediaItem(const int64_t mediaItemID, const std::vector<Language>& languages)
+{
+    
+}
+
+coro::task<std::vector<models::Images>> getUnassignedImages();
+
+inline coro::task<bool> deleteLibrary(const int64_t libraryID)
+{
+
 }

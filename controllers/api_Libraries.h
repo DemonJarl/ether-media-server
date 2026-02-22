@@ -20,7 +20,7 @@ class Libraries : public drogon::HttpController<Libraries>
     METHOD_ADD(Libraries::getLibraries, "", Get,Options, "AuthFilter"); // список библиотек
     METHOD_ADD(Libraries::createLibrary, "", Post,Options, "AuthFilter");
     METHOD_ADD(Libraries::deleteLibrary, "/{id}", Delete,Options, "AuthFilter");
-    METHOD_ADD(Libraries::modifyLibrary, "/{id}", Put,Options, "AuthFilter");
+    METHOD_ADD(Libraries::modifyLibrary, "/{id}", Patch,Options, "AuthFilter");
 
     METHOD_ADD(Libraries::libraryPath, "/{id}/paths/{path_id}", Get,Options, "AuthFilter");
     METHOD_ADD(Libraries::updateLibraryPath, "/{id}/paths/{path_id}", Put,Options, "AuthFilter");

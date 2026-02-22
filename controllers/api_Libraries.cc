@@ -1,10 +1,13 @@
 #include "api_Libraries.h"
+#include "DBUtils.h"
 #include "Libraries.h"
 #include "LibraryPaths.h"
 #include "LibrarySettingsManager.hpp"
+#include "MediaEnums.h"
 #include "MediaUtils.h"
 #include "ThreadPool.h"
 #include "Users.h"
+#include "coro/sync_wait.hpp"
 #include "utils/JsonUtils.h"
 #include "utils/Utils.h"
 #include <cstdint>
@@ -21,6 +24,7 @@
 #include <json/writer.h>
 #include <memory>
 #include <models/Libraries.h>
+#include <optional>
 #include <queue>
 #include <string>
 #include <sys/types.h>
@@ -227,22 +231,15 @@ void Libraries::scan(const HttpRequestPtr &req,
             const int64_t libraryId)
 {
     LOG_INFO<<std::format("User-Agent {}", req->getHeader("User-Agent"));
-    orm::DbClientPtr dbClientPtr = drogon::app().getDbClient();
-    orm::Mapper<models::Libraries> mp(dbClientPtr);
-    models::Libraries library{};
-    try
+    std::optional<models::Libraries> library{};
+    library = coro::sync_wait(findRecordByPrimaryKeyORM<models::Libraries>(libraryId));
+    if (!library)
     {
-        library = mp.findByPrimaryKey(libraryId);
-    }
-    catch (drogon::orm::UnexpectedRows e) 
-    { 
-        LOG_WARN<<e.what();
-        std::cerr << "error:" << e.what() << std::endl;
-        callback(errorResponse("Не корректный id библиотеки", ErrorCode::IncorectData, HttpStatusCode::k400BadRequest));
-        //return;
+        callback(errorResponse("Нет такой библиотеки", ErrorCode::EmptyData, HttpStatusCode::k404NotFound));
+        return;
     }
     // threadPool.enqueue_detach(&scanLibrary, library, ScanMode::Full);
-    threadPool.detach_task([library]{
+    threadPool.detach_task([library = std::move(*library)]{
         scanLibrary(std::move(library), ScanMode::Full);
     });
     //scanLibrary(library,ScanMode::Full);
@@ -256,17 +253,10 @@ void Libraries::scan(const HttpRequestPtr &req,
 void Libraries::scanAll(const HttpRequestPtr &req,
             std::function<void (const HttpResponsePtr &)> &&callback)
 {
-    
-    orm::DbClientPtr dbClientPtr = drogon::app().getDbClient();
-    orm::Mapper<models::Libraries> mp(dbClientPtr);
-    std::vector<models::Libraries> libraries = mp.findAll();
-    for (auto& library : libraries)
-    {
-        threadPool.detach_task([&library]{
-            scanLibrary(library, ScanMode::Full);
-        });
-    }
-    auto resp = HttpResponse::newHttpResponse();
+    scanLibraries(ScanMode::Full);
+    Json::Value ret;
+    ret["result"] = "ok";
+    auto resp = HttpResponse::newHttpJsonResponse(ret);
     callback(resp);
     return;
 }

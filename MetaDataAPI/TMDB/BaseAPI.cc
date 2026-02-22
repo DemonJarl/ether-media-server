@@ -12,6 +12,7 @@
 #include "cpr/cpr.h"
 #include "cpr/curl_container.h"
 #include "cpr/parameters.h"
+#include "cpr/timeout.h"
 #include <json/value.h>
 #include <map>
 #include <memory>
@@ -44,7 +45,7 @@ std::expected<Json::Value, APIError> BaseAPI::get(std::string url)
     std::cout << "URL: " << url << std::endl;
     Json::Value ret;
     Json::Reader reader; 
-    cpr::Response resp = cpr::Get(cpr::Url(url), cpr::Header{{"Authorization","Bearer "+BaseAPI::key}});
+    cpr::Response resp = cpr::Get(cpr::Url(url), cpr::Header{{"Authorization","Bearer "+BaseAPI::key}}, cpr::Timeout{5000});
     //std::cout<<"Get status_code: "<<resp.status_code<<std::endl;
     //std::cout<<"JSON: "<<resp.text<<std::endl;
     if (resp.error.code != cpr::ErrorCode::OK)

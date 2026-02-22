@@ -38,6 +38,8 @@ namespace drogon_model
 {
 namespace sqlite3
 {
+class MediaItemImageAssignments;
+class MediaItems;
 
 class Images
 {
@@ -48,6 +50,8 @@ class Images
         static const std::string _image_type_id;
         static const std::string _language_id;
         static const std::string _path;
+        static const std::string _origin;
+        static const std::string _image_link;
     };
 
     static const int primaryKeyNumber;
@@ -132,14 +136,36 @@ class Images
     void setPath(const std::string &pPath) noexcept;
     void setPath(std::string &&pPath) noexcept;
 
+    /**  For column origin  */
+    ///Get the value of the column origin, returns the default value if the column is null
+    const int64_t &getValueOfOrigin() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<int64_t> &getOrigin() const noexcept;
+    ///Set the value of the column origin
+    void setOrigin(const int64_t &pOrigin) noexcept;
 
-    static size_t getColumnNumber() noexcept {  return 4;  }
+    /**  For column image_link  */
+    ///Get the value of the column image_link, returns the default value if the column is null
+    const std::string &getValueOfImageLink() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getImageLink() const noexcept;
+    ///Set the value of the column image_link
+    void setImageLink(const std::string &pImageLink) noexcept;
+    void setImageLink(std::string &&pImageLink) noexcept;
+    void setImageLinkToNull() noexcept;
+
+
+    static size_t getColumnNumber() noexcept {  return 6;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
     std::string toString() const;
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
+    std::vector<std::pair<MediaItems,MediaItemImageAssignments>> getMediaItems(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getMediaItems(const drogon::orm::DbClientPtr &clientPtr,
+                       const std::function<void(std::vector<std::pair<MediaItems,MediaItemImageAssignments>>)> &rcb,
+                       const drogon::orm::ExceptionCallback &ecb) const;
   private:
     friend drogon::orm::Mapper<Images>;
     friend drogon::orm::BaseBuilder<Images, true, true>;
@@ -159,6 +185,8 @@ class Images
     std::shared_ptr<int64_t> imageTypeId_;
     std::shared_ptr<int64_t> languageId_;
     std::shared_ptr<std::string> path_;
+    std::shared_ptr<int64_t> origin_;
+    std::shared_ptr<std::string> imageLink_;
     struct MetaData
     {
         const std::string colName_;
@@ -170,7 +198,7 @@ class Images
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[4]={ false };
+    bool dirtyFlag_[6]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -203,6 +231,16 @@ class Images
             sql += "path,";
             ++parametersCount;
         }
+        if(dirtyFlag_[4])
+        {
+            sql += "origin,";
+            ++parametersCount;
+        }
+        if(dirtyFlag_[5])
+        {
+            sql += "image_link,";
+            ++parametersCount;
+        }
         if(parametersCount > 0)
         {
             sql[sql.length()-1]=')';
@@ -222,6 +260,16 @@ class Images
 
         }
         if(dirtyFlag_[3])
+        {
+            sql.append("?,");
+
+        }
+        if(dirtyFlag_[4])
+        {
+            sql.append("?,");
+
+        }
+        if(dirtyFlag_[5])
         {
             sql.append("?,");
 

@@ -39,6 +39,8 @@ namespace drogon_model
 namespace sqlite3
 {
 class ExternalMediaItemIds;
+class Images;
+class MediaItemImageAssignments;
 
 class MediaItems
 {
@@ -221,6 +223,10 @@ class MediaItems
     void getExternalMediaItemIds(const drogon::orm::DbClientPtr &clientPtr,
                                  const std::function<void(std::vector<ExternalMediaItemIds>)> &rcb,
                                  const drogon::orm::ExceptionCallback &ecb) const;
+    std::vector<std::pair<Images,MediaItemImageAssignments>> getImages(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getImages(const drogon::orm::DbClientPtr &clientPtr,
+                   const std::function<void(std::vector<std::pair<Images,MediaItemImageAssignments>>)> &rcb,
+                   const drogon::orm::ExceptionCallback &ecb) const;
   private:
     friend drogon::orm::Mapper<MediaItems>;
     friend drogon::orm::BaseBuilder<MediaItems, true, true>;

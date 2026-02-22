@@ -7,6 +7,8 @@
 
 #include "MediaItems.h"
 #include "ExternalMediaItemIds.h"
+#include "Images.h"
+#include "MediaItemImageAssignments.h"
 #include <drogon/utils/Utilities.h>
 #include <string>
 
@@ -1919,6 +1921,44 @@ void MediaItems::getExternalMediaItemIds(const DbClientPtr &clientPtr,
                    for (auto const &row : r)
                    {
                        ret.emplace_back(ExternalMediaItemIds(row));
+                   }
+                   rcb(ret);
+               }
+               >> ecb;
+}
+std::vector<std::pair<Images,MediaItemImageAssignments>> MediaItems::getImages(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from images,media_item_image_assignments where media_item_image_assignments.media_item_id = ? and media_item_image_assignments.image_id = images.id";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *id_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    std::vector<std::pair<Images,MediaItemImageAssignments>> ret;
+    ret.reserve(r.size());
+    for (auto const &row : r)
+    {
+        ret.emplace_back(std::pair<Images,MediaItemImageAssignments>(
+            Images(row),MediaItemImageAssignments(row,Images::getColumnNumber())));
+    }
+    return ret;
+}
+
+void MediaItems::getImages(const DbClientPtr &clientPtr,
+                           const std::function<void(std::vector<std::pair<Images,MediaItemImageAssignments>>)> &rcb,
+                           const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from images,media_item_image_assignments where media_item_image_assignments.media_item_id = ? and media_item_image_assignments.image_id = images.id";
+    *clientPtr << sql
+               << *id_
+               >> [rcb = std::move(rcb)](const Result &r){
+                   std::vector<std::pair<Images,MediaItemImageAssignments>> ret;
+                   ret.reserve(r.size());
+                   for (auto const &row : r)
+                   {
+                       ret.emplace_back(std::pair<Images,MediaItemImageAssignments>(
+                           Images(row),MediaItemImageAssignments(row,Images::getColumnNumber())));
                    }
                    rcb(ret);
                }

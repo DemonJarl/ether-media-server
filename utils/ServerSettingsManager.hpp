@@ -22,18 +22,28 @@ private:
     std::string TMDBAPIKey{};
 
     template<settingValue T>
-    coro::task<T> getSettingValue(const std::string& settingKey)
+    coro::task<bool> getSettingValue(const std::string& settingKey, T& value, const T& defaultValue)
     {
         if (settingKey.empty())
-            co_return {};
+        {
+            value = defaultValue;
+            co_return false;
+        }
         auto res = co_await execSQL(app().getDbClient("serverSettings"), "select value from server_settings where (server_settings.setting_name = $1)", settingKey);
-        if (!res.has_value())
-            co_return {};
+        if (!res)
+        {
+            value = defaultValue;
+            co_return false;
+        }
         if ((*res).size() == 0)
-            co_return {};
-        co_return (*res)[0]["value"].template as<T>();
+        {
+            value = defaultValue;
+            co_return false;
+        }
+        value = std::move((*res)[0]["value"].template as<T>());
+        co_return true;
     };
-
+    
     template<settingValue T>
     coro::task<bool> setSettingValue(const std::string& settingKey, const T& value)
     {
@@ -42,15 +52,16 @@ private:
     
     ServerSettingsManager()
     {
-        imageSaveDirectory = coro::sync_wait(getSettingValue<std::string>(ServerSetingsKeys::imageSaveLocation));
+        std::string tmp = "../Images";
+        getAbsolutePath(tmp);
+        
         // если пустой деволтим 
-        if (imageSaveDirectory.empty())
+        if (!coro::sync_wait(getSettingValue<std::string>(ServerSetingsKeys::imageSaveLocation, imageSaveDirectory, tmp)) || imageSaveDirectory.empty())
         {
-            imageSaveDirectory = "../Images";
             coro::sync_wait(setSettingValue(ServerSetingsKeys::imageSaveLocation, imageSaveDirectory));
         }
         createDirectoryIfNotExists(imageSaveDirectory);
-        TMDBAPIKey = coro::sync_wait(getSettingValue<std::string>(ServerSetingsKeys::TMDBAPIKey));
+        coro::sync_wait(getSettingValue<std::string>(ServerSetingsKeys::TMDBAPIKey, TMDBAPIKey, ""));
     }
 
 public:
