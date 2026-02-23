@@ -1,7 +1,17 @@
 #include "JsonUtils.h"
+#include "DBUtils.h"
+#include "Libraries.h"
+#include "LibraryPaths.h"
+#include "MediaEnums.h"
+#include "MediaItems.h"
+#include "MediaUtils.h"
 #include "Utils.h"
+#include "coro/sync_wait.hpp"
 #include <cstdint>
+#include <drogon/HttpAppFramework.h>
 #include <drogon/HttpResponse.h>
+#include <drogon/orm/DbClient.h>
+#include <filesystem>
 #include <json/value.h>
 #include <string>
 #include <trantor/utils/Logger.h>
@@ -112,24 +122,115 @@ bool validatePathJson(Json::Value& json, JsonValidationMode mode)
 {
     return true;
 }
-// Json::Value defaultLibrarySetting()
-// {
-//     Json::Value ret;
-//     ret["MetaDataProviders"] = Json::Value();
-//     ret["MetaDataProviders"].append("TMDB");
-//     return ret;
-// }
-// Json::Value defaultUserSettings()
-// {
-//     Json::Value ret, tmp;
-//     tmp["size"] = 10;
-//     tmp["fontColor"] = "white";
-//     tmp["backgroundColor"] = "black";
-//     tmp["font"] = "Arial";
-//     tmp["backgroundOpacity"] = 10;
-//     tmp["foregroundOpacity"] = 10;
-//     ret["subtitleSettings"] = tmp;
-//     ret["preferedSubtitleLanguage"] = "rus";
-//     ret["preferedVOLanguage"] = "rus";
-//     return ret;
-// }
+
+
+coro::task<Json::Value> libraryToJson(const models::Libraries& library)
+{
+    orm::DbClientPtr dbPtr = app().getDbClient();
+    Json::Value ret = library.toJson();
+    Json::Value& pathsJson = (ret["paths"] = Json::arrayValue);
+    auto paths = library.getLibraryPaths(dbPtr);
+    for (const auto& path : paths)
+    {
+        pathsJson.append(Json::Value{std::move(path.getValueOfPath())});
+    }   
+    co_return ret;
+}
+
+coro::task<Json::Value> libraryToJson(const int64_t libraryID)
+{
+    auto library = coro::sync_wait(findRecordByPrimaryKeyORM<models::Libraries>(libraryID));
+    if (!library)
+        co_return {};
+    co_return co_await libraryToJson(*library);
+}
+
+
+coro::task<Json::Value> mediaItemToJson(const int64_t mediaItemID, const Language language)
+{
+    auto mediaItem = coro::sync_wait(findRecordByPrimaryKeyORM<models::MediaItems>(mediaItemID));
+    if (!mediaItem)
+        co_return {};
+    co_return co_await mediaItemToJson(*mediaItem, language);
+}
+
+coro::task<Json::Value> mediaItemToJson(const models::MediaItems& mediaItem, const Language language)
+{
+    Json::Value ret{};
+    int64_t mediaItemID = mediaItem.getPrimaryKey();
+    ret["id"] = mediaItemID;
+    ret["parentID"] = (mediaItem.getValueOfParentId() == 0 ? Json::nullValue : mediaItem.getValueOfParentId());
+    ret["season"] = mediaItem.getValueOfEpisode();
+    ret["episode"] = mediaItem.getValueOfEpisode();
+    std::string title, description, tagline;
+    co_await getMediaItemTitle(mediaItemID, language, title, description, tagline);
+    ret["title"] = std::move(title);
+    ret["description"] = std::move(description);
+    ret["tagline"] = std::move(tagline);
+    ret["type"] = mediaItem.getValueOfMediaItemTypeId(); 
+    ret["path"] = mediaItem.getValueOfPath();
+
+    Json::Value& streams = (ret["streams"] = Json::arrayValue);
+    auto dbPointer = app().getDbClient();
+    auto s = mediaItem.getMediaItemStreams(dbPointer);
+    for (auto& stream : s)
+        streams.append(mediaStreamToJson(stream));
+    
+    Json::Value& images = (ret["images"] = Json::arrayValue);
+    auto imagesORM = co_await getImagesForMediaItem(mediaItemID, language, Language::en);
+    for (auto& image : imagesORM)
+        images.append(imageToJson(image));
+
+    Json::Value& credits = (ret["credits"] = Json::arrayValue);
+    auto creditsORM = co_await getCreditsForMediaItemID(mediaItemID);
+    for (auto& credit : creditsORM)
+        credits.append(creditToJson(credit));
+
+    Json::Value& extIDs = (ret["externalIDs"] = Json::arrayValue);
+    auto extIDsORM = mediaItem.getExternalMediaItemIds(dbPointer);
+    for (const auto& extID : extIDsORM)
+        extIDs.append(externalMediaItemIDToJson(extID));
+    
+    // На будущее
+    // Json::Value& userData = (ret["userData"] = Json::objectValue);
+    co_return ret;
+}
+
+Json::Value mediaStreamToJson(const models::MediaItemStreams& stream)
+{
+    Json::Value ret{};
+    ret["name"] = std::move(stream.getValueOfName());
+    ret["streamIndex"] = stream.getValueOfStreamIndex();
+    ret["type"] = stream.getValueOfStreamTypeId();
+    ret["bitrate"] = stream.getValueOfBitrate();
+    ret["width"] = stream.getValueOfWidth();
+    ret["height"] = stream.getValueOfHeight();
+    return ret;
+}
+
+Json::Value imageToJson(const models::Images& image)
+{
+    Json::Value ret{};
+    ret["fileName"] = fs::path(image.getValueOfPath()).filename().string();
+    ret["imageType"] = image.getValueOfImageTypeId();
+    ret["language"] = image.getValueOfLanguageId();
+    ret["origin"] = image.getValueOfOrigin();
+    return ret;
+}
+
+Json::Value creditToJson(const models::Credits& credit)
+{
+    Json::Value ret;
+    ret["id"] = credit.getPrimaryKey();
+    ret["type"] = credit.getValueOfCreditTypeId();
+    ret["personID"] = credit.getValueOfPersonId();
+    return ret;
+}
+
+Json::Value externalMediaItemIDToJson(const models::ExternalMediaItemIds& extId)
+{
+    Json::Value ret{};
+    ret["origin"] = extId.getValueOfMetadataProviderId();
+    ret["extID"] = extId.getValueOfExternalId();
+    return ret;
+}

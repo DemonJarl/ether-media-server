@@ -45,12 +45,12 @@ std::expected<Json::Value, APIError> BaseAPI::get(std::string url)
     std::cout << "URL: " << url << std::endl;
     Json::Value ret;
     Json::Reader reader; 
-    cpr::Response resp = cpr::Get(cpr::Url(url), cpr::Header{{"Authorization","Bearer "+BaseAPI::key}}, cpr::Timeout{5000});
+    cpr::Response resp = cpr::Get(cpr::Url(url), cpr::Header{{"Authorization","Bearer "+BaseAPI::key}}, cpr::Timeout{10000});
     //std::cout<<"Get status_code: "<<resp.status_code<<std::endl;
     //std::cout<<"JSON: "<<resp.text<<std::endl;
     if (resp.error.code != cpr::ErrorCode::OK)
     {
-        std::cout<<"Error code: "<<std::to_string(resp.error.code )<<std::endl;
+        std::cout<<std::format("Error: {}", resp.error.message);
         return std::unexpected(APIError::TransportError);
     }
     if (resp.status_code != 200)

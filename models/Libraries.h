@@ -39,6 +39,8 @@ namespace drogon_model
 namespace sqlite3
 {
 class LibraryPaths;
+class MediaItemLibraryAssignments;
+class MediaItems;
 
 class Libraries
 {
@@ -138,6 +140,10 @@ class Libraries
     void getLibraryPaths(const drogon::orm::DbClientPtr &clientPtr,
                          const std::function<void(std::vector<LibraryPaths>)> &rcb,
                          const drogon::orm::ExceptionCallback &ecb) const;
+    std::vector<std::pair<MediaItems,MediaItemLibraryAssignments>> getMediaItems(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getMediaItems(const drogon::orm::DbClientPtr &clientPtr,
+                       const std::function<void(std::vector<std::pair<MediaItems,MediaItemLibraryAssignments>>)> &rcb,
+                       const drogon::orm::ExceptionCallback &ecb) const;
   private:
     friend drogon::orm::Mapper<Libraries>;
     friend drogon::orm::BaseBuilder<Libraries, true, true>;

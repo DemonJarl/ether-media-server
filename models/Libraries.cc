@@ -7,6 +7,8 @@
 
 #include "Libraries.h"
 #include "LibraryPaths.h"
+#include "MediaItemLibraryAssignments.h"
+#include "MediaItems.h"
 #include <drogon/utils/Utilities.h>
 #include <string>
 
@@ -669,6 +671,44 @@ void Libraries::getLibraryPaths(const DbClientPtr &clientPtr,
                    for (auto const &row : r)
                    {
                        ret.emplace_back(LibraryPaths(row));
+                   }
+                   rcb(ret);
+               }
+               >> ecb;
+}
+std::vector<std::pair<MediaItems,MediaItemLibraryAssignments>> Libraries::getMediaItems(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from media_items,media_item_library_assignments where media_item_library_assignments.library_id = ? and media_item_library_assignments.media_item_id = media_items.id";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *id_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    std::vector<std::pair<MediaItems,MediaItemLibraryAssignments>> ret;
+    ret.reserve(r.size());
+    for (auto const &row : r)
+    {
+        ret.emplace_back(std::pair<MediaItems,MediaItemLibraryAssignments>(
+            MediaItems(row),MediaItemLibraryAssignments(row,MediaItems::getColumnNumber())));
+    }
+    return ret;
+}
+
+void Libraries::getMediaItems(const DbClientPtr &clientPtr,
+                              const std::function<void(std::vector<std::pair<MediaItems,MediaItemLibraryAssignments>>)> &rcb,
+                              const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from media_items,media_item_library_assignments where media_item_library_assignments.library_id = ? and media_item_library_assignments.media_item_id = media_items.id";
+    *clientPtr << sql
+               << *id_
+               >> [rcb = std::move(rcb)](const Result &r){
+                   std::vector<std::pair<MediaItems,MediaItemLibraryAssignments>> ret;
+                   ret.reserve(r.size());
+                   for (auto const &row : r)
+                   {
+                       ret.emplace_back(std::pair<MediaItems,MediaItemLibraryAssignments>(
+                           MediaItems(row),MediaItemLibraryAssignments(row,MediaItems::getColumnNumber())));
                    }
                    rcb(ret);
                }

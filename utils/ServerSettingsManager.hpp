@@ -61,6 +61,7 @@ private:
             coro::sync_wait(setSettingValue(ServerSetingsKeys::imageSaveLocation, imageSaveDirectory));
         }
         createDirectoryIfNotExists(imageSaveDirectory);
+        // app().
         coro::sync_wait(getSettingValue<std::string>(ServerSetingsKeys::TMDBAPIKey, TMDBAPIKey, ""));
     }
 

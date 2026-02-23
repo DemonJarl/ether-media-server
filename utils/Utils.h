@@ -118,4 +118,4 @@ template <typename... Ts>
 inline coro::task<cpr::Response> getCoro(Ts&&... ts)
 {
     co_return cpr::Get(ts...);
-} 
+}

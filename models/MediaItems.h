@@ -40,7 +40,11 @@ namespace sqlite3
 {
 class ExternalMediaItemIds;
 class Images;
+class Libraries;
 class MediaItemImageAssignments;
+class MediaItemLibraryAssignments;
+class MediaItemStreams;
+class MediaItems;
 
 class MediaItems
 {
@@ -223,10 +227,26 @@ class MediaItems
     void getExternalMediaItemIds(const drogon::orm::DbClientPtr &clientPtr,
                                  const std::function<void(std::vector<ExternalMediaItemIds>)> &rcb,
                                  const drogon::orm::ExceptionCallback &ecb) const;
+    std::vector<MediaItemLibraryAssignments> getMediaItemLibraryAssignments(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getMediaItemLibraryAssignments(const drogon::orm::DbClientPtr &clientPtr,
+                                        const std::function<void(std::vector<MediaItemLibraryAssignments>)> &rcb,
+                                        const drogon::orm::ExceptionCallback &ecb) const;
+    std::vector<MediaItems> getMediaItems(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getMediaItems(const drogon::orm::DbClientPtr &clientPtr,
+                       const std::function<void(std::vector<MediaItems>)> &rcb,
+                       const drogon::orm::ExceptionCallback &ecb) const;
+    std::vector<MediaItemStreams> getMediaItemStreams(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getMediaItemStreams(const drogon::orm::DbClientPtr &clientPtr,
+                             const std::function<void(std::vector<MediaItemStreams>)> &rcb,
+                             const drogon::orm::ExceptionCallback &ecb) const;
     std::vector<std::pair<Images,MediaItemImageAssignments>> getImages(const drogon::orm::DbClientPtr &clientPtr) const;
     void getImages(const drogon::orm::DbClientPtr &clientPtr,
                    const std::function<void(std::vector<std::pair<Images,MediaItemImageAssignments>>)> &rcb,
                    const drogon::orm::ExceptionCallback &ecb) const;
+    std::vector<std::pair<Libraries,MediaItemLibraryAssignments>> getLibraries(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getLibraries(const drogon::orm::DbClientPtr &clientPtr,
+                      const std::function<void(std::vector<std::pair<Libraries,MediaItemLibraryAssignments>>)> &rcb,
+                      const drogon::orm::ExceptionCallback &ecb) const;
   private:
     friend drogon::orm::Mapper<MediaItems>;
     friend drogon::orm::BaseBuilder<MediaItems, true, true>;

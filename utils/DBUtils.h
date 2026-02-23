@@ -23,12 +23,19 @@ concept ModelORMWithPK = requires (model) {
     model::primaryKeyName;
 };
 
+inline orm::DbClientPtr DbPtrWithForeignKey()
+{
+    auto ret = app().getDbClient();
+    ret->execSqlSync("PRAGMA foreign_keys = ON");
+    return ret;
+}
+
 template<ModelORMWithPK model, typename KeyType>
 coro::task<std::optional<model>> findRecordByPrimaryKeyORM(const KeyType& key, orm::DbClientPtr dbPointer = nullptr)
 {
     static_assert(std::is_same<typename model::PrimaryKeyType, KeyType>(), "Типа ключа должен быть равным типу ключа таблицы");
     if (!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     orm::Mapper<model> mp(dbPointer);
     try
     {
@@ -47,7 +54,7 @@ coro::task<std::optional<KeyType>> findRecordByPrimaryKey(const KeyType& key, or
 {
     static_assert(std::is_same<typename model::PrimaryKeyType, KeyType>(), "Типа ключа должен быть равным типу ключа таблицы");
     if (!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     orm::Mapper<model> mp(dbPointer);
     co_return findRecordByPrimaryKeyORM<model>(key).getPrimaryKey();
 }
@@ -56,7 +63,7 @@ template<ModelORMWithPK model>
 coro::task<std::optional<model>> findRecordByCriteriaORM(const orm::Criteria& criteria, orm::DbClientPtr dbPointer = nullptr) 
 {
     if (!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
 
     orm::Mapper<model> mp(dbPointer);
     try
@@ -74,7 +81,7 @@ template<ModelORMWithPK model>
 coro::task<std::optional<typename model::PrimaryKeyType>> findRecordByCriteria(const orm::Criteria& criteria, orm::DbClientPtr dbPointer = nullptr)
 {
     if (!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
 
     auto ret = co_await findRecordByCriteriaORM<model>(criteria, dbPointer);
     if (ret.has_value())
@@ -86,7 +93,7 @@ template<ModelORMWithPK model>
 coro::task<std::vector<model>> findRecordsByCriteriaORM(const orm::Criteria& criteria, orm::DbClientPtr dbPointer = nullptr) 
 {
     if (!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
 
     orm::Mapper<model> mp(dbPointer);
     
@@ -105,7 +112,7 @@ template<ModelORMWithPK model>
 coro::task<std::vector<typename model::PrimaryKeyType>> findRecordsByCriteria(const orm::Criteria& criteria, orm::DbClientPtr dbPointer = nullptr)
 {
     if (!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     auto records = findRecordsByCriteriaORM<model>(criteria, dbPointer);
     if (records.empty())
         co_return {};
@@ -119,7 +126,7 @@ template<ModelORMWithPK model>
 coro::task<bool> recordExists(const orm::Criteria& criteria, orm::DbClientPtr dbPointer = nullptr)
 {
     if (!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
 
     co_return (co_await findRecordByCriteriaORM<model>(criteria, dbPointer)).has_value();
 }
@@ -128,7 +135,7 @@ template<ModelORMWithPK model>
 coro::task<size_t> recordCount(orm::DbClientPtr dbPointer = nullptr)
 {
     if (!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
 
     orm::Mapper<model> mp(dbPointer);
     co_return mp.count();
@@ -138,7 +145,7 @@ template<ModelORMWithPK model>
 coro::task<size_t> recordCount(const orm::Criteria& criteria, orm::DbClientPtr dbPointer = nullptr)
 {
     if (!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
 
     orm::Mapper<model> mp(dbPointer);
     co_return mp.count(criteria);
@@ -163,7 +170,7 @@ template<ModelORMWithPK model>
 coro::task<std::optional<typename model::PrimaryKeyType>> insertRecord(model& record, orm::DbClientPtr dbPointer = nullptr)
 {
     if (!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     orm::Mapper<model> mp(dbPointer);
     try
     {
@@ -180,7 +187,7 @@ template<ModelORMWithPK model>
 coro::task<bool> updateRecord(model& record, orm::DbClientPtr dbPointer = nullptr)
 {
     if (!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     orm::Mapper<model> mp(dbPointer);
     try
     {
@@ -231,7 +238,7 @@ coro::task<bool> deleteRecordByPrimaryKey(const KeyType& key, orm::DbClientPtr d
 {
     static_assert(std::is_same<typename model::PrimaryKeyType, KeyType>(), "Типа ключа должен быть равным типу ключа таблицы");
     if (!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     orm::Mapper<model> mp(dbPointer);
 
     try
@@ -250,7 +257,7 @@ template <typename ...Args>
 coro::task<std::optional<orm::Result>> execSQL(orm::DbClientPtr dbPointer, const std::string& sql, Args&&...args)
 {
     if (!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     try
     {
         co_return co_await dbPointer->execSqlCoro(sql, args...);
@@ -265,7 +272,7 @@ coro::task<std::optional<orm::Result>> execSQL(orm::DbClientPtr dbPointer, const
 // template <typename T, typename ...Args>
 // std::optional<T> execSQLSingle(const std::string& sql, const std::string& resultColumnName, Args&&...args)
 // {
-//     auto dbPointer = app().getDbClient();
+//     auto dbPointer = DbPtrWithForeignKey();
 //     try
 //     {
 //         auto res = dbPointer->execSqlSync(sql, args...);

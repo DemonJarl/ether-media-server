@@ -2,6 +2,7 @@
 
 #include <drogon/HttpController.h>
 #include <drogon/HttpTypes.h>
+#include <drogon/utils/coroutine.h>
 #include <string>
 //constinit dp::thread_pool threadPool;
 using namespace drogon;
@@ -21,13 +22,13 @@ class Libraries : public drogon::HttpController<Libraries>
     METHOD_ADD(Libraries::createLibrary, "", Post,Options, "AuthFilter");
     METHOD_ADD(Libraries::deleteLibrary, "/{id}", Delete,Options, "AuthFilter");
     METHOD_ADD(Libraries::modifyLibrary, "/{id}", Patch,Options, "AuthFilter");
+    METHOD_ADD(Libraries::getMediaItems, "/{id}/mediaItems", Get,Options, "AuthFilter");
 
     METHOD_ADD(Libraries::libraryPath, "/{id}/paths/{path_id}", Get,Options, "AuthFilter");
     METHOD_ADD(Libraries::updateLibraryPath, "/{id}/paths/{path_id}", Put,Options, "AuthFilter");
     METHOD_ADD(Libraries::deleteLibraryPath, "/{id}/paths/{path_id}", Delete,Options, "AuthFilter");
     METHOD_ADD(Libraries::libraryPaths, "/{id}/paths", Get,Put,Options, "AuthFilter");
     METHOD_ADD(Libraries::createLibraryPath, "/{id}/paths", Post,Options, "AuthFilter");
-
     //METHOD_ADD(Libraries::modifyLibrary, "/{id}/path/{path_id}", Put,Options, "AuthFilter");
     // RPC API
     METHOD_ADD(Libraries::scan, "/{id}/scan", Post,Options, "AuthFilter");
@@ -50,6 +51,9 @@ class Libraries : public drogon::HttpController<Libraries>
                std::function<void (const HttpResponsePtr &)> &&callback,
                const int64_t libraryId);
     void modifyLibrary(const HttpRequestPtr &req,
+               std::function<void (const HttpResponsePtr &)> &&callback,
+               const int64_t libraryId);
+    void getMediaItems(const HttpRequestPtr &req,
                std::function<void (const HttpResponsePtr &)> &&callback,
                const int64_t libraryId);
     void libraryPath(const HttpRequestPtr &req,

@@ -38,6 +38,7 @@ namespace drogon_model
 {
 namespace sqlite3
 {
+class MediaItems;
 
 class MediaItemStreams
 {
@@ -196,6 +197,10 @@ class MediaItemStreams
     std::string toString() const;
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
+    MediaItems getMediaItems(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getMediaItems(const drogon::orm::DbClientPtr &clientPtr,
+                       const std::function<void(MediaItems)> &rcb,
+                       const drogon::orm::ExceptionCallback &ecb) const;
   private:
     friend drogon::orm::Mapper<MediaItemStreams>;
     friend drogon::orm::BaseBuilder<MediaItemStreams, true, true>;

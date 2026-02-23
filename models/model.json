@@ -88,6 +88,36 @@
             },
             {
                 "type": "has many",
+                "original_table_name": "media_items",
+                "original_table_alias": "",
+                "original_key": "id",
+                "target_table_name": "media_item_library_assignments",
+                "target_table_alias": "",
+                "target_key": "media_item_id",
+                "enable_reverse": true
+            },
+            {
+                "type": "has many",
+                "original_table_name": "media_items",
+                "original_table_alias": "",
+                "original_key": "id",
+                "target_table_name": "media_items",
+                "target_table_alias": "",
+                "target_key": "parent_id",
+                "enable_reverse": true
+            },
+            {
+                "type": "has many",
+                "original_table_name": "media_items",
+                "original_table_alias": "",
+                "original_key": "id",
+                "target_table_name": "media_item_streams",
+                "target_table_alias": "",
+                "target_key": "media_item_id",
+                "enable_reverse": true
+            },
+            {
+                "type": "has many",
                 "original_table_name": "libraries",
                 "original_table_alias": "",
                 "original_key": "id",
@@ -107,6 +137,21 @@
                     "target_key": "image_id"
                 },
                 "target_table_name": "images",
+                "target_table_alias": "",
+                "target_key": "id",
+                "enable_reverse": true
+            },
+            {
+                "type": "many to many",
+                "original_table_name": "media_items",
+                "original_table_alias": "",
+                "original_key": "id",
+                "pivot_table": {
+                    "table_name": "media_item_library_assignments",
+                    "original_key": "media_item_id",
+                    "target_key": "library_id"
+                },
+                "target_table_name": "libraries",
                 "target_table_alias": "",
                 "target_key": "id",
                 "enable_reverse": true

@@ -8,7 +8,10 @@
 #include "MediaItems.h"
 #include "ExternalMediaItemIds.h"
 #include "Images.h"
+#include "Libraries.h"
 #include "MediaItemImageAssignments.h"
+#include "MediaItemLibraryAssignments.h"
+#include "MediaItemStreams.h"
 #include <drogon/utils/Utilities.h>
 #include <string>
 
@@ -1926,6 +1929,114 @@ void MediaItems::getExternalMediaItemIds(const DbClientPtr &clientPtr,
                }
                >> ecb;
 }
+std::vector<MediaItemLibraryAssignments> MediaItems::getMediaItemLibraryAssignments(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from media_item_library_assignments where media_item_id = ?";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *id_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    std::vector<MediaItemLibraryAssignments> ret;
+    ret.reserve(r.size());
+    for (auto const &row : r)
+    {
+        ret.emplace_back(MediaItemLibraryAssignments(row));
+    }
+    return ret;
+}
+
+void MediaItems::getMediaItemLibraryAssignments(const DbClientPtr &clientPtr,
+                                                const std::function<void(std::vector<MediaItemLibraryAssignments>)> &rcb,
+                                                const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from media_item_library_assignments where media_item_id = ?";
+    *clientPtr << sql
+               << *id_
+               >> [rcb = std::move(rcb)](const Result &r){
+                   std::vector<MediaItemLibraryAssignments> ret;
+                   ret.reserve(r.size());
+                   for (auto const &row : r)
+                   {
+                       ret.emplace_back(MediaItemLibraryAssignments(row));
+                   }
+                   rcb(ret);
+               }
+               >> ecb;
+}
+std::vector<MediaItems> MediaItems::getMediaItems(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from media_items where parent_id = ?";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *id_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    std::vector<MediaItems> ret;
+    ret.reserve(r.size());
+    for (auto const &row : r)
+    {
+        ret.emplace_back(MediaItems(row));
+    }
+    return ret;
+}
+
+void MediaItems::getMediaItems(const DbClientPtr &clientPtr,
+                               const std::function<void(std::vector<MediaItems>)> &rcb,
+                               const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from media_items where parent_id = ?";
+    *clientPtr << sql
+               << *id_
+               >> [rcb = std::move(rcb)](const Result &r){
+                   std::vector<MediaItems> ret;
+                   ret.reserve(r.size());
+                   for (auto const &row : r)
+                   {
+                       ret.emplace_back(MediaItems(row));
+                   }
+                   rcb(ret);
+               }
+               >> ecb;
+}
+std::vector<MediaItemStreams> MediaItems::getMediaItemStreams(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from media_item_streams where media_item_id = ?";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *id_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    std::vector<MediaItemStreams> ret;
+    ret.reserve(r.size());
+    for (auto const &row : r)
+    {
+        ret.emplace_back(MediaItemStreams(row));
+    }
+    return ret;
+}
+
+void MediaItems::getMediaItemStreams(const DbClientPtr &clientPtr,
+                                     const std::function<void(std::vector<MediaItemStreams>)> &rcb,
+                                     const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from media_item_streams where media_item_id = ?";
+    *clientPtr << sql
+               << *id_
+               >> [rcb = std::move(rcb)](const Result &r){
+                   std::vector<MediaItemStreams> ret;
+                   ret.reserve(r.size());
+                   for (auto const &row : r)
+                   {
+                       ret.emplace_back(MediaItemStreams(row));
+                   }
+                   rcb(ret);
+               }
+               >> ecb;
+}
 std::vector<std::pair<Images,MediaItemImageAssignments>> MediaItems::getImages(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from images,media_item_image_assignments where media_item_image_assignments.media_item_id = ? and media_item_image_assignments.image_id = images.id";
     Result r(nullptr);
@@ -1959,6 +2070,44 @@ void MediaItems::getImages(const DbClientPtr &clientPtr,
                    {
                        ret.emplace_back(std::pair<Images,MediaItemImageAssignments>(
                            Images(row),MediaItemImageAssignments(row,Images::getColumnNumber())));
+                   }
+                   rcb(ret);
+               }
+               >> ecb;
+}
+std::vector<std::pair<Libraries,MediaItemLibraryAssignments>> MediaItems::getLibraries(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from libraries,media_item_library_assignments where media_item_library_assignments.media_item_id = ? and media_item_library_assignments.library_id = libraries.id";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *id_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    std::vector<std::pair<Libraries,MediaItemLibraryAssignments>> ret;
+    ret.reserve(r.size());
+    for (auto const &row : r)
+    {
+        ret.emplace_back(std::pair<Libraries,MediaItemLibraryAssignments>(
+            Libraries(row),MediaItemLibraryAssignments(row,Libraries::getColumnNumber())));
+    }
+    return ret;
+}
+
+void MediaItems::getLibraries(const DbClientPtr &clientPtr,
+                              const std::function<void(std::vector<std::pair<Libraries,MediaItemLibraryAssignments>>)> &rcb,
+                              const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from libraries,media_item_library_assignments where media_item_library_assignments.media_item_id = ? and media_item_library_assignments.library_id = libraries.id";
+    *clientPtr << sql
+               << *id_
+               >> [rcb = std::move(rcb)](const Result &r){
+                   std::vector<std::pair<Libraries,MediaItemLibraryAssignments>> ret;
+                   ret.reserve(r.size());
+                   for (auto const &row : r)
+                   {
+                       ret.emplace_back(std::pair<Libraries,MediaItemLibraryAssignments>(
+                           Libraries(row),MediaItemLibraryAssignments(row,Libraries::getColumnNumber())));
                    }
                    rcb(ret);
                }

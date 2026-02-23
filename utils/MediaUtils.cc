@@ -47,6 +47,7 @@
 #include "Languages.h"
 #include "MediaEnums.h"
 #include "MediaItemImageAssignments.h"
+#include "MediaItemLibraryAssignments.h"
 #include "MediaItemLocalizations.h"
 #include "MediaItemStreams.h"
 #include "Models/TVSeries.hpp"
@@ -68,7 +69,6 @@
 #include "Utils.h"
 #include "caches/cache.hpp"
 #include "caches/fifo_cache_policy.hpp"
-#include "caches/lru_cache_policy.hpp"
 #include "EnumToInt.h"
 #include "MetaDataAPI/TMDB/Models/TVSeries.hpp"
 #include "MetaDataAPI/TMDB/Endpoints/SearchMovie.hpp"
@@ -78,7 +78,6 @@
 #include "coro/mutex.hpp"
 #include "coro/sync_wait.hpp"
 #include "coro/task.hpp"
-#include "coro/when_all.hpp"
 #include "cpr/cprtypes.h"
 #include <format>
 extern "C" 
@@ -255,7 +254,7 @@ std::string splitStrToStrCopy(const std::vector<std::string>& splitStr,  std::st
 void scanLibraries(ScanMode mode, orm::DbClientPtr dbPointer)
 {
     if (!dbPointer)
-        dbPointer = drogon::app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     orm::Mapper<models::Libraries> mp(dbPointer);
     
     try 
@@ -277,7 +276,7 @@ void scanLibraries(ScanMode mode, orm::DbClientPtr dbPointer)
 void scanLibrary(const int64_t libraryID, ScanMode mode, orm::DbClientPtr dbPointer)
 {
     if (!dbPointer)
-        dbPointer = drogon::app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     orm::Mapper<models::Libraries> mp(dbPointer);
     try 
     {
@@ -300,7 +299,7 @@ void scanLibrary(const models::Libraries& library, ScanMode mode, orm::DbClientP
 {
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     if (!dbPointer)
-        dbPointer = drogon::app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
 
     // execSQL("PRAGMA journal_mode=WAL");
     // execSQL("PRAGMA busy_timeout=5000");
@@ -347,7 +346,7 @@ void scanLibrary(const models::Libraries& library, ScanMode mode, orm::DbClientP
         scanFutures.clear();
     }
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-    LOG_ERROR<<std::format("Закончили сканирование за {} сек", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()/1000000.0);
+    LOG_INFO<<std::format("Закончили сканирование за {} сек", std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()/1000000.0);
     return;
 }
 
@@ -386,10 +385,10 @@ coro::task<void> analyzeFile(const fs::directory_entry& file, const LibraryScanS
             {
                 co_return;
             }
-            // if ((*mediaItem).getExternalMediaItemIds(app().getDbClient()).empty())
+            // if ((*mediaItem).getExternalMediaItemIds(DbPtrWithForeignKey()).empty())
             // {
             co_await getTVShowMetaData(scanSettings, *tvShow);
-            co_await getTVSeasonMetaData(scanSettings, *tvSeason, (*tvSeason).getExternalMediaItemIds(app().getDbClient()));
+            co_await getTVSeasonMetaData(scanSettings, *tvSeason, (*tvSeason).getExternalMediaItemIds(DbPtrWithForeignKey()));
             // }
             co_await getTVEpisodeMetaData(scanSettings, *mediaItem);
         }
@@ -401,7 +400,7 @@ coro::task<void> analyzeFile(const fs::directory_entry& file, const LibraryScanS
     }
     item.setPath(path);
     parseFileName(path.stem(), parsedSeriesTitle, season, episode, year);
-    orm::Mapper<models::MediaItems> mp(app().getDbClient());
+    orm::Mapper<models::MediaItems> mp(DbPtrWithForeignKey());
     if (episode != 0)
     {
         item.setEpisode(episode);
@@ -423,7 +422,13 @@ coro::task<void> analyzeFile(const fs::directory_entry& file, const LibraryScanS
             avformat_close_input(&fmt_ctx); // важно!
             co_return;
         }
-       co_await getTVEpisodeMetaData(scanSettings, item);
+        if (!co_await assignMediaItemToLibraryByPath(item.getPrimaryKey(), path))
+        {
+            avformat_close_input(&fmt_ctx); // важно!
+            co_await  deleteMediaItem(item);
+            co_return;
+        }
+        co_await getTVEpisodeMetaData(scanSettings, item);
     }
     else 
     {
@@ -438,44 +443,89 @@ coro::task<void> analyzeFile(const fs::directory_entry& file, const LibraryScanS
             avformat_close_input(&fmt_ctx); // важно!
             co_return;
         }
+        if (!co_await assignMediaItemToLibraryByPath(item.getPrimaryKey(), path))
+        {
+            avformat_close_input(&fmt_ctx); // важно!
+            co_await  deleteMediaItem(item);
+            co_return;
+        }
         co_await getMovieMetaData(scanSettings, item);
         // просто получить информацию о фильме
     }
-    insertStreams(fmt_ctx->streams, fmt_ctx->nb_streams, item.getPrimaryKey());
-    co_await assignMediaItemToLibraryByPath(item.getPrimaryKey(), path);
+    co_await insertStreams(fmt_ctx->streams, fmt_ctx->nb_streams, item.getPrimaryKey());
     avformat_close_input(&fmt_ctx); // важно!
     co_return;
 }
 
 
-coro::task<void> assignMediaItemToLibraryByPath(const int64_t mediaItemID, const std::string& path)
+coro::task<bool> assignMediaItemToLibraryByPath(const int64_t mediaItemID, const std::string& path)
 {   
-    try
+    LOG_DEBUG<<std::format("assignMediaItemToLibraryByPath({}, {})", mediaItemID, path);
+    auto res = co_await execSQL(nullptr, "select library_paths.library_id from library_paths where instr($1, library_paths.path) = 1", path);
+
+    if (!res || (*res).empty())
     {
-        auto res = co_await drogon::app().getDbClient()->execSqlCoro("select library_paths.library_id from library_paths where instr($1, library_paths.path) = 1", path);
-        if (res.size() == 0)
-            co_return;
-        for (auto id : res)
-            co_await assignMediaItemToLibraryByID(mediaItemID, id["library_id"].as<int64_t>());
+        LOG_DEBUG<<std::format("Не удалось привязать mediaItem {} к библиотеки", mediaItemID);
+        // co_await  deleteMediaItem(mediaItemID);
+        co_return false;
     }
-    catch (const drogon::orm::DrogonDbException& e)
-    {
-        LOG_ERROR<<"Ошибка назначения библиотеки по пути: "<<e.base().what();
-        co_return;
-    }
+    for (auto id : *res)
+        co_await assignMediaItemToLibraryByID(mediaItemID, id["library_id"].as<int64_t>());
+    co_return true;
 }
 
-coro::task<void> assignMediaItemToLibraryByID(const int64_t mediaItemID, const int64_t libraryID)
+coro::task<bool> assignMediaItemToLibraryByID(const int64_t mediaItemID, const int64_t libraryID)
 {
-    try
+    LOG_DEBUG<<std::format("assignMediaItemToLibraryByID({}, {})", mediaItemID, libraryID);
+    auto res = co_await execSQL(nullptr, "\
+        insert or ignore into media_item_library_assignments (media_item_id, library_id)\
+        select\
+        items.id,\
+        $1\
+        from media_items items\
+        where\
+        (\
+            items.id = $2\
+        )\
+        union select\
+        seasons.id,\
+        $1\
+        from media_items items\
+        inner join media_items seasons on\
+        (\
+            seasons.id = items.parent_id\
+            and seasons.media_item_type_id = 2\
+        )\
+        where\
+        (\
+            items.id = $2\
+        )\
+        union select\
+        shows.id,\
+        $1\
+        from media_items items\
+        inner join media_items seasons on\
+        (\
+            seasons.id = items.parent_id\
+            and seasons.media_item_type_id = 2\
+        )\
+        inner join media_items shows on\
+        (\
+            shows.id = seasons.parent_id\
+            and shows.media_item_type_id = 1\
+        )\
+        where\
+        (\
+            items.id = $2\
+        )\
+        ", libraryID, mediaItemID);
+    if (!res && (*res).affectedRows() == 0)
     {
-        auto res = co_await drogon::app().getDbClient()->execSqlCoro("insert into media_item_library_assignments (media_item_id, library_id) values($1,$2)", mediaItemID, libraryID);
+        LOG_DEBUG<<std::format("Не удалось привязать mediaItem {} к библиотеки {}", mediaItemID, libraryID);
+        // co_await deleteMediaItem(mediaItemID);
+        co_return false;
     }
-    catch (const drogon::orm::DrogonDbException& e)
-    {
-        LOG_ERROR<<"Ошибка назначения библиотеки по ID: "<<e.base().what();
-        co_return;
-    }
+    co_return true;
 }
 
 
@@ -535,31 +585,18 @@ std::vector<fs::directory_entry> enumerateFiles(const std::vector<std::string>& 
     return ret;
 }
 
-void insertStreams(AVStream** streams, uint streamCount, int64_t mediaItemID, orm::DbClientPtr dbPointer)
+coro::task<void> insertStreams(AVStream** streams, uint streamCount, int64_t mediaItemID)
 {
     if (streams == NULL || streamCount == 0)
-        return;
-
-    if (!dbPointer)
-        dbPointer = drogon::app().getDbClient();
-
-    orm::Mapper<models::MediaItemStreams> mp(dbPointer);
-    
+        co_return;
     for (uint i = 0; i < streamCount; ++i)
     {
         if (!streams[i] || AVMediaTypeToStreamType( streams[i]->codecpar->codec_type) == StreamType::Unknown)
             continue;
-        try 
-        {
-            models::MediaItemStreams stream = parseStream(*streams[i], mediaItemID);
-            mp.insert(stream);
-        } 
-        catch (const drogon::orm::DrogonDbException& e)
-        {
-            LOG_ERROR<<"Ошибка вставки потока: "<<e.base().what();
-            continue;
-        }
+        auto stream = parseStream(*streams[i], mediaItemID);
+        co_await insertRecord(stream);
     }
+    co_return;
 }
 
 models::MediaItemStreams parseStream(AVStream& stream, int64_t mediaItemID)
@@ -598,8 +635,6 @@ models::MediaItemStreams parseStream(AVStream& stream, int64_t mediaItemID)
             if ((tag = av_dict_get(stream.metadata, "BPS", nullptr, 0)))
                 ret.setBitrate(std::atoi(tag->value));
             break;
-        case StreamType::Unknown:
-            throw std::invalid_argument("Тип потока должен быть аудио, видео или субтитры");
     }
     return ret;
 }
@@ -609,7 +644,7 @@ coro::task<std::optional<int64_t>> findSeasonMediaItemID(const std::string& seri
 {
     LOG_DEBUG<<std::format("findSeasonMediaItemID({}, {}, {})", seriesTitle, season, releaseDate);
     if (!dbPointer)
-        dbPointer = drogon::app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     orm::Result result{nullptr};
     try
     {
@@ -646,7 +681,7 @@ coro::task<std::optional<int64_t>>  findShowMediaItemID(const std::string& serie
     LOG_ERROR<<std::format("findShowMediaItemID({}, {})", seriesTitle, releaseDate);
 
     if (!dbPointer)
-        dbPointer = drogon::app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     orm::Result result{nullptr};
     try
     {
@@ -694,7 +729,7 @@ coro::task<std::optional<int64_t>> getParentForEpisode(const std::string& showTi
     auto lock = co_await getParentMutex.scoped_lock();
     LOG_ERROR<<std::format("getParentForEpisode({}, {}, {})", showTitle, season, releaseDate);
     if (!dbPointer)
-        dbPointer = drogon::app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     if (season <= 0)
         std::invalid_argument("Сезон должен быть больше нуля");
     std::optional<int64_t> id;
@@ -814,7 +849,7 @@ coro::task<std::optional<models::MediaItems>> createMediaItem(const LibraryScanS
     // std::lock_guard<std::mutex> lockMutex(createSeasonMutex);
     LOG_DEBUG<<std::format("CreateMediaItem({}, {}, {}, {}, {}, {})", enumToInt(type), parentID, parsedTitle, season, episode, releaseDate);
     if (!dbPointer)
-        dbPointer = drogon::app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
    
     models::MediaItems ret;
 
@@ -902,7 +937,7 @@ coro::task<std::optional<int64_t>> createTVShowMediaItem(const LibraryScanSettin
 {
     LOG_DEBUG<<std::format("createTVShowMediaItem: {}, {}", parsedTitle, releaseDate);
     if (!dbPointer)
-        dbPointer = drogon::app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
 
     std::optional<models::MediaItems> tvShow = co_await createMediaItem(scanSettings, MediaType::TVShow, 0, parsedTitle, "", 0, 0, releaseDate);
     if (!tvShow.has_value())
@@ -914,7 +949,7 @@ coro::task<std::optional<int64_t>> createTVShowMediaItem(const LibraryScanSettin
 coro::task<std::optional<int64_t>> createTVSeasonMediaItem(const LibraryScanSettings& scanSettings, const int64_t parentID, const int season,  const std::string& releaseDate, orm::DbClientPtr dbPointer)
 {
     if (!dbPointer)
-       dbPointer = drogon::app().getDbClient();
+       dbPointer = DbPtrWithForeignKey();
 
     std::optional<models::MediaItems> tvSeason = co_await createMediaItem(scanSettings, MediaType::TVSeason, parentID, "", "", season, 0, releaseDate);
     if (!tvSeason.has_value())
@@ -926,7 +961,7 @@ coro::task<std::optional<int64_t>> createTVSeasonMediaItem(const LibraryScanSett
 coro::task<std::vector<models::ExternalMediaItemIds>> getMediaItemExternalID(const int64_t mediaItemID, orm::DbClientPtr dbPointer)
 {
     if (!dbPointer)
-        dbPointer = drogon::app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     orm::Mapper<models::MediaItems> mp(dbPointer);
     auto mediaItem = co_await findRecordByPrimaryKeyORM<models::MediaItems>(mediaItemID);
     if (!mediaItem.has_value())
@@ -937,7 +972,7 @@ coro::task<std::vector<models::ExternalMediaItemIds>> getMediaItemExternalID(con
 coro::task<std::vector<models::ExternalMediaItemIds>>getShowExternalIDFromSeason(const int64_t seasonMediaItemID, orm::DbClientPtr dbPointer)
 {
     if (!dbPointer)
-        dbPointer = drogon::app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     std::vector<models::ExternalMediaItemIds> ret{};
     orm::Mapper<models::MediaItems> mp(dbPointer);
     try
@@ -955,7 +990,7 @@ coro::task<std::vector<models::ExternalMediaItemIds>>getShowExternalIDFromSeason
 coro::task<std::vector<models::ExternalMediaItemIds>> getMediaItemExternalID(const models::MediaItems& mediaItem, orm::DbClientPtr dbPointer)
 {
     if (!dbPointer)
-        dbPointer = drogon::app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     co_return mediaItem.getExternalMediaItemIds(dbPointer);
 }
 
@@ -1054,15 +1089,21 @@ coro::task<bool> getTVEpisodeMetaDataTMDB(const LibraryScanSettings& scanSetting
                 std::string newName = mediaItem.getValueOfParsedName();
                 newName = newName.substr(0, newName.rfind('S') - 1);
                 LOG_ERROR<<std::format("new parsed name {}", newName);
+                auto oldParent = mediaItem.getValueOfParentId();
                 auto newParent = co_await getParentForEpisode(newName, newSeason, mediaItem.getValueOfReleaseDate(), scanSettings);
-                newName += std::format(" S{}E{}", newSeason, newEpisode);
-                LOG_ERROR<<std::format("new name {}", newName);
                 if (!newParent.has_value())
                     co_return false;
+                newName += std::format(" S{}E{}", newSeason, newEpisode);
+                LOG_ERROR<<std::format("new name {}", newName);
                 mediaItem.setParsedName(newName);
                 mediaItem.setParentId(*newParent);
                 if (!co_await updateRecord(mediaItem))
                     co_return false;
+                auto assignments = mediaItem.getMediaItemLibraryAssignments(app().getDbClient());
+                for (const auto& assignment : assignments)
+                    co_await assignMediaItemToLibraryByID(*newParent, assignment.getValueOfLibraryId());
+                if (co_await getMediaItemChildrenCount(oldParent) == 0)
+                    co_await deleteMediaItem(oldParent);
             }
             season = newSeason;
             episode = newEpisode;
@@ -1472,7 +1513,7 @@ coro::task<bool> getTVShowMetaData(const LibraryScanSettings& scanSettings, mode
 coro::task<std::optional<int64_t>> insertGenre(const MetaDataProvider provider, const std::string& extID, orm::DbClientPtr dbPointer)
 {
     if(!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
 
     orm::Mapper<models::Genres> mp(dbPointer);
     models::Genres genre;
@@ -1494,7 +1535,7 @@ coro::task<void> insertGenre(const int64_t mediaItemID, const MetaDataProvider p
 {
     LOG_DEBUG<<std::format("insertGenre({}, {}, {}, {}, {})", mediaItemID, enumToInt(provider), extID , name, enumToInt(language));
     if(!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     std::optional<int64_t> genreID = co_await findGenre(provider, extID, dbPointer);
     if (!genreID.has_value())
     {
@@ -1512,7 +1553,7 @@ coro::task<void> insertGenre(const int64_t mediaItemID, const MetaDataProvider p
 coro::task<void> insertGenreLocalization(const int64_t genreID, const Language language, const std::string& name, orm::DbClientPtr dbPointer)
 {
     if(!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     if(co_await isGenreLocalized(genreID, language, dbPointer))
         co_return;
     orm::Mapper<models::GenreLocalizations> mp(dbPointer);
@@ -1535,7 +1576,7 @@ coro::task<void> insertGenreLocalization(const int64_t genreID, const Language l
 coro::task<bool> assignGenre(const int64_t genreID, const int64_t mediaItemID, orm::DbClientPtr dbPointer)
 {
     if(!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     if (co_await isGenreAssigned(genreID, mediaItemID, dbPointer))
         co_return true;
     orm::Mapper<models::GenreAssignments> mp(dbPointer);
@@ -1557,7 +1598,7 @@ coro::task<bool> assignGenre(const int64_t genreID, const int64_t mediaItemID, o
 coro::task<bool> isGenreAssigned(const int64_t genreID, const int64_t mediaItemID, orm::DbClientPtr dbPointer)
 {
     if(!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     co_return co_await recordExists<models::GenreAssignments>(orm::Criteria(models::GenreAssignments::Cols::_genre_id, orm::CompareOperator::EQ, genreID)
      && orm::Criteria(models::GenreAssignments::Cols::_media_item_id, orm::CompareOperator::EQ, mediaItemID), dbPointer);
 }
@@ -1598,7 +1639,7 @@ coro::task<bool> getMovieMetaData(const LibraryScanSettings& scanSettings, model
 coro::task<std::optional<int64_t>> insertMediaItemLocalization(const int64_t mediaItemID, const Language language, const std::string& name, const std::string& description, const std::string& tagline, const bool original)
 {
     LOG_DEBUG<<std::format("insertMediaItemLocalization({}, {}, {}, {}, {})", mediaItemID, enumToInt(language), name, description, tagline);
-    auto dbPointer = drogon::app().getDbClient();
+    auto dbPointer = DbPtrWithForeignKey();
     std::optional<models::MediaItemLocalizations> localization;
     localization = co_await findMediaItemLocalization(mediaItemID, language, dbPointer);
     if (localization.has_value() && localization->getValueOfName() != name && localization->getValueOfDescription() != description && localization->getValueOfTagline() != tagline)
@@ -1635,7 +1676,7 @@ coro::task<std::optional<int64_t>> insertMediaItemLocalization(const int64_t med
 coro::task<std::optional<models::MediaItemLocalizations>> findMediaItemLocalization(const int64_t mediaItemID, const Language language, orm::DbClientPtr dbPointer)
 {
     if (!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     orm::Mapper<models::MediaItemLocalizations> mp(dbPointer);
     try
     {
@@ -1655,7 +1696,7 @@ coro::task<std::optional<int64_t>> insertMediaItemExternalID(const int64_t media
     if (externalID.empty())
         co_return {};
     models::ExternalMediaItemIds extMediaItemIDs;
-    orm::Mapper<models::ExternalMediaItemIds> mp(drogon::app().getDbClient());
+    orm::Mapper<models::ExternalMediaItemIds> mp(DbPtrWithForeignKey());
     extMediaItemIDs.setMediaItemId(mediaItemID);
     extMediaItemIDs.setMetadataProviderId(enumToInt(provider));
     extMediaItemIDs.setExternalId(externalID);
@@ -1675,7 +1716,7 @@ coro::task<std::optional<int64_t>> insertMediaItemExternalID(const int64_t media
 
 coro::task<std::optional<int64_t>>  insertCredit(const int64_t personID, const CreditType creditType)
 {
-    auto dbPointer = drogon::app().getDbClient();
+    auto dbPointer = DbPtrWithForeignKey();
     co_return {};
 }
 
@@ -1706,7 +1747,7 @@ coro::task<std::optional<int64_t>> findPerson(const MetaDataProvider provider, c
 {
     LOG_DEBUG<<std::format("findPerson({}, {})", enumToInt(provider), externalID);
     if (!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     try
     {
         auto result = co_await dbPointer->execSqlCoro("select people.id as id from people inner join external_people_ids extID on (extID.person_id = people.id and extID.metadata_provider_id = $1 and extID.external_id = $2)",
@@ -1730,7 +1771,7 @@ coro::task<std::optional<int64_t>> findPerson(const std::string& name, const Gen
         co_return {};
 
     if (!dbPointer)
-        dbPointer = drogon::app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     
     try
     {
@@ -1751,7 +1792,7 @@ coro::task<std::optional<int64_t>> findPerson(const std::string& name, const Gen
 }
 coro::task<std::optional<int64_t>> findCredit(const std::string& role, const CreditType creditType)
 {
-    auto dbPointer = drogon::app().getDbClient();
+    auto dbPointer = DbPtrWithForeignKey();
     try 
     {
         
@@ -1771,7 +1812,7 @@ coro::task<std::optional<int64_t>> findOrInsertPerson(const MetaDataProvider pro
     //std::lock_guard lockFindOrInsertPerson(findOrInsertPersonMutex);
     auto lock = co_await findOrInsertPersonMutex.scoped_lock();
     // coro::mutex
-    auto dbPointer = app().getDbClient();
+    auto dbPointer = DbPtrWithForeignKey();
     auto personID = co_await findPerson(provider, id, dbPointer);
     if (personID.has_value())
     {
@@ -2045,7 +2086,7 @@ coro::task<void> insertCredits(const std::vector<TMDBAPI::Models::CastCredit>& c
 
 coro::task<std::optional<int64_t>> findGenre(const std::string& name)
 {
-    orm::Mapper<models::GenreLocalizations> mp(app().getDbClient());
+    orm::Mapper<models::GenreLocalizations> mp(DbPtrWithForeignKey());
     try
     {
         auto genreLoc = mp.findBy(orm::Criteria(models::GenreLocalizations::Cols::_name, orm::CompareOperator::EQ, name));
@@ -2096,7 +2137,7 @@ coro::task<bool> isAssigned(const int64_t genreID, const int64_t mediaItemID)
 
 coro::task<std::string> getImageData(const std::string& imageLink)
 {
-    cpr::Response resp = co_await getCoro(cpr::Url(imageLink), cpr::Timeout(3000));                                                   
+    cpr::Response resp = co_await getCoro(cpr::Url(imageLink), cpr::Timeout(10000));                                                   
     if (resp.error.code != cpr::ErrorCode::OK)
     {
         LOG_ERROR<<std::format("getImageData cpr error {}", resp.error.message);
@@ -2157,7 +2198,6 @@ coro::task<std::optional<int64_t>> CreateAndInsertImage(const MetaDataProvider o
             co_await deleteImage(*image);
             co_return {};
         }
-
         (*image).setPath(imagePath);
         co_await updateRecord(*image);
         co_return (*image).getPrimaryKey();
@@ -2214,7 +2254,7 @@ coro::task<void> insertImage(const MetaDataProvider origin, const ImageType type
 coro::task<std::optional<int64_t>> insertProductionCompany(const std::string& name, orm::DbClientPtr dbPointer)
 {
     if(!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
 
     auto rec = co_await findRecordByCriteriaORM<models::ProductionCompanies>(orm::Criteria(models::ProductionCompanies::Cols::_name, orm::CompareOperator::EQ, name), dbPointer);
     if (rec.has_value())
@@ -2229,7 +2269,7 @@ coro::task<std::optional<int64_t>> insertProductionCompany(const std::string& na
 coro::task<bool> assignProductionCompany(const int64_t mediaItemID, const int64_t productionCompanyID, orm::DbClientPtr dbPointer)
 {
     if(!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     if (co_await recordExists<models::ProductionCompanyAssignments>(orm::Criteria(models::ProductionCompanyAssignments::Cols::_media_item_id, orm::CompareOperator::EQ, mediaItemID)
         && orm::Criteria(models::ProductionCompanyAssignments::Cols::_production_company_id, orm::CompareOperator::EQ, productionCompanyID), dbPointer))
         co_return true;
@@ -2245,7 +2285,7 @@ coro::task<bool> assignProductionCompany(const int64_t mediaItemID, const int64_
 // Вставка/нахождение компании и привязка
 coro::task<std::optional<int64_t>> insertProductionCompany(const int64_t mediaItemID, const std::string& name)
 {
-    auto dbPointer = app().getDbClient();
+    auto dbPointer = DbPtrWithForeignKey();
     auto companyID = co_await insertProductionCompany(name, dbPointer);
     if (!companyID.has_value())
         co_return {};
@@ -2552,21 +2592,19 @@ Language TMDBLanguageToLanguage(const TMDBAPI::Languages language)
 coro::task<std::optional<int64_t>> insertPath(const int64_t libraryID, const std::string& path);
 coro::task<bool> deletePath(const int64_t pathID)
 {
-    auto mediaItemIDs = co_await getMediaItemIDsByPath(pathID);
-    if (mediaItemIDs.empty())
-        co_return true;
-    for (const auto id : mediaItemIDs)
+    auto mediaItemIDs = co_await getMediaItemsByPath(pathID);
+    for (const auto& mediaItem : mediaItemIDs)
     {
-        if (!co_await deleteMediaItem(id))
-            LOG_INFO<<std::format("Не удалось удалить медиа контент с id {}", id);
+        if (!co_await deleteMediaItem(mediaItem))
+            LOG_INFO<<std::format("Не удалось удалить медиа контент с id {}", mediaItem.getPrimaryKey());
     }
-    co_return true;
+    co_return co_await deleteRecordByPrimaryKey<models::LibraryPaths>(pathID);
 }
 
 coro::task<std::vector<int64_t>> getMediaItemIDsByPath(const int64_t pathID)
 {
     std::vector<int64_t> ret{};
-    auto res = co_await execSQL(nullptr, "", pathID);
+    auto res = co_await execSQL(nullptr, "select items.id as id from media_items items inner join library_paths paths on (instr(items.path, paths.path) = 1 and paths.id = $1)", pathID);
     if (!res)
         co_return ret;
     ret.reserve((*res).size());
@@ -2579,32 +2617,31 @@ coro::task<std::vector<int64_t>> getMediaItemIDsByPath(const int64_t pathID)
 
 coro::task<std::vector<models::MediaItems>> getMediaItemsByPath(const int64_t pathID)
 {
-    auto ids = co_await getMediaItemIDsByPath(pathID);
     std::vector<models::MediaItems> ret{};
-    auto size = ids.size();
-    if (size == 0)
+    auto res = co_await execSQL(nullptr, "select items.* from media_items items inner join library_paths paths on (instr(items.path, paths.path) = 1 and paths.id = $1)", pathID);
+    if (!res)
         co_return ret;
-    ret.reserve(size);
-    for (auto id : ids)
-    {
-        auto mediaItem = co_await findRecordByPrimaryKeyORM<models::MediaItems>(id);
-        if (!mediaItem)
-            continue;
-        ret.emplace_back(std::move(*mediaItem));
-    }
+    ret.reserve((*res).size());
+    for (auto& row : (*res))
+        ret.emplace_back(row);
     co_return ret;
 }
 
 coro::task<bool> deleteMediaItem(const models::MediaItems& mediaItem)
 {
     auto images = co_await getImagesForMediaItem(mediaItem.getPrimaryKey()); 
-
-    if (!images.empty())
+    LOG_INFO<<std::format("Image count {} for media item {}", images.size(), mediaItem.getPrimaryKey());
+    for (auto& image : images)
+        co_await deleteImage(image);
+    std::vector<models::MediaItems> children = mediaItem.getMediaItems(app().getDbClient());
+    for (auto& child : children)
+        co_await deleteRecordByPrimaryKey<models::MediaItems>(child.getPrimaryKey());
+    auto parentID = mediaItem.getParentId();
+    if (parentID)
     {
-        for (auto& image : images)
-            co_await deleteImage(image);
+        if (((co_await getMediaItemChildrenCount(*parentID))) - 1 == 0)
+            co_return co_await deleteMediaItem(*parentID);
     }
-
     co_return co_await deleteRecordByPrimaryKey<models::MediaItems>(mediaItem.getPrimaryKey());
 }
 
@@ -2628,9 +2665,9 @@ coro::task<std::vector<int64_t>> getImageIDsForMediaItem(const int64_t mediaItem
 
 coro::task<std::vector<models::Images>> getImagesForMediaItem(const int64_t mediaItemID)
 {
-    auto dbPointer = app().getDbClient();
+    auto dbPointer = DbPtrWithForeignKey();
     auto mediaItem = co_await findRecordByPrimaryKeyORM<models::MediaItems>(mediaItemID, dbPointer);
-    if (!mediaItem.has_value())
+    if (!mediaItem)
         co_return {};
     auto images = (*mediaItem).getImages(dbPointer);
     std::vector<models::Images> ret{};
@@ -2640,14 +2677,45 @@ coro::task<std::vector<models::Images>> getImagesForMediaItem(const int64_t medi
     co_return ret;
 }
 
-coro::task<std::vector<models::Images>> getImagesForMediaItem(const int64_t mediaItemID, const std::vector<Language>& languages)
+coro::task<std::vector<models::Images>> getImagesForMediaItem(const int64_t mediaItemID, const Language language, const Language fallbackLanguage)
 {
-    
+    auto res = co_await execSQL(nullptr, "\
+        select DISTINCT coalesce(images.id, fallback_images.id)  as id\
+        from media_item_image_assignments assignments\
+        left join images on\
+        (\
+            images.id = assignments.image_id\
+            and images.language_id in ($1, 136)\
+        )\
+        left join images fallback_images on\
+        (\
+            fallback_images.id = assignments.image_id\
+            and fallback_images.language_id = $2\
+        )\
+        where\
+        (\
+            assignments.media_item_id = $3\
+        )\
+        group by coalesce(images.image_type_id, fallback_images.image_type_id)\
+        ", enumToInt(language), enumToInt(fallbackLanguage), mediaItemID);
+    std::vector<models::Images> ret{};
+    if (!res || (*res).empty())
+        co_return ret;
+    ret.reserve((*res).size());
+    for (auto& row : *res)
+    {
+        auto image = co_await findRecordByPrimaryKeyORM<models::Images>(row["id"].as<int64_t>());
+        if (!image)
+            continue;
+        ret.emplace_back(std::move(*image));
+    }
+    co_return ret;
 }
 
 coro::task<std::vector<models::Images>> getUnassignedImages();
 
-inline coro::task<bool> deleteLibrary(const int64_t libraryID)
+coro::task<bool> deleteLibrary(const int64_t libraryID)
 {
-
+    
 }
+

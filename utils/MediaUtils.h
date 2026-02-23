@@ -25,6 +25,7 @@
 #include "GenreLocalizations.h"
 #include "Genres.h"
 #include "Images.h"
+#include "LibraryPaths.h"
 #include "MediaEnums.h"
 #include "MediaItemLocalizations.h"
 #include "MediaItemStreams.h"
@@ -77,7 +78,16 @@ struct LibraryScanSettings
     }
 };
 
-coro::task<std::optional<int64_t>> insertPath(const int64_t libraryID, const std::string& path);
+inline coro::task<std::optional<int64_t>> insertPath(const int64_t libraryID, const std::string& path)
+{
+    if (!pathExists(path))
+        co_return {};
+    models::LibraryPaths libraryPath{};
+    libraryPath.setLibraryId(libraryID);
+    libraryPath.setPath(path);
+    co_return co_await insertRecord(libraryPath);    
+}
+
 coro::task<bool> deletePath(const int64_t pathID);
 coro::task<std::vector<int64_t>> getMediaItemIDsByPath(const int64_t pathID);
 coro::task<std::vector<models::MediaItems>> getMediaItemsByPath(const int64_t pathID);
@@ -86,8 +96,7 @@ coro::task<bool> deleteMediaItem(const int64_t mediaItemID);
 coro::task<std::vector<int64_t>> getImageIDsForMediaItem(const int64_t mediaItemID);
 coro::task<std::vector<int64_t>> getImageIDsForMediaItem(const int64_t mediaItemID, const std::vector<Language>& languages);
 coro::task<std::vector<models::Images>> getImagesForMediaItem(const int64_t mediaItemID);
-coro::task<std::vector<models::Images>> getImagesForMediaItem(const int64_t mediaItemID, const std::vector<Language>& languages);
-
+coro::task<std::vector<models::Images>> getImagesForMediaItem(const int64_t mediaItemID, const Language language, const Language fallbackLanguage);
 void scanLibrary(const int64_t, ScanMode mode, orm::DbClientPtr dbPointer = nullptr);
 void scanLibrary(const models::Libraries& library, ScanMode mode, orm::DbClientPtr dbPointer = nullptr);
 void scanLibraries(ScanMode mode, orm::DbClientPtr dbPointer = nullptr);
@@ -100,11 +109,11 @@ coro::task<std::optional<models::MediaItemLocalizations>> findMediaItemLocalizat
 std::vector<fs::directory_entry> enumerateFiles(const std::string& path);
 std::vector<fs::directory_entry> enumerateFiles(std::vector<std::string> path);
 
-coro::task<void> assignMediaItemToLibraryByPath(const int64_t mediaItemID, const std::string& path);
-coro::task<void> assignMediaItemToLibraryByID(const int64_t mediaItemID, const int64_t libraryID);
+coro::task<bool> assignMediaItemToLibraryByPath(const int64_t mediaItemID, const std::string& path);
+coro::task<bool> assignMediaItemToLibraryByID(const int64_t mediaItemID, const int64_t libraryID);
 
 
-void insertStreams(AVStream** streams, uint streamCount, int64_t mediaItemID, orm::DbClientPtr dbPointer = nullptr);
+coro::task<void> insertStreams(AVStream** streams, uint streamCount, int64_t mediaItemID);
 models::MediaItemStreams parseStream(AVStream& stream, int64_t mediaItemID);
 void parseFileName(const std::string& fileName, std::string& name, int& season, int& episode, int& year);
 
@@ -165,7 +174,7 @@ inline coro::task<void> updateMediaItemTimestamp(const int64_t mediaItemId)
 inline coro::task<void> updateMediaItemTimestamp(models::MediaItems& mediaItem, orm::DbClientPtr dbPointer)
 {
     if(!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     mediaItem.setLastUpdated(getCurrentDateTime());
     if (!co_await updateRecord(mediaItem, dbPointer))
         LOG_ERROR<<"Не удалось обновить время последнего обновления медиа предмета"; 
@@ -251,6 +260,24 @@ std::vector<int64_t> findCredits(const std::string& role, const CreditType credi
 std::vector<int64_t> findCredits(const std::string& role, const CreditType creditType);
 coro::task<std::optional<int64_t>> findCredit(const int64_t personID, const int64_t mediaItemID, const CreditType creditType, const std::string& role);
 coro::task<std::optional<int64_t>> findCredits(const int64_t personID, const int64_t mediaItemID, const CreditType creditType);
+inline coro::task<std::vector<models::Credits>> getCreditsForMediaItemID(const int64_t mediaItemID)
+{
+    auto res = co_await execSQL(nullptr, "select credits.* from credit_assignments inner join credits on credits.id = credit_assignments.credit_id where credit_assignments.media_item_id = $1", mediaItemID);
+    std::vector<models::Credits> ret{};
+    if (!res || (*res).empty())
+        co_return ret;
+    ret.reserve(((*res).size()));
+    for (const auto& row : *res)
+    {
+        // auto credit = co_await findRecordByPrimaryKeyORM<models::Credits>(row["id"].as<int64_t>());
+        // if (!credit)
+        //     continue;
+        // ret.emplace_back(std::move(*credit));
+        ret.emplace_back(row);
+    }
+    co_return ret;
+}
+coro::task<std::vector<models::Credits>> getCreditsForPerson(const int64_t personID);
 inline coro::task<std::optional<int64_t>> findCredit(const MetaDataProvider origin, const std::string& externalID)
 {
     co_return co_await findRecordByCriteria<models::Credits>(orm::Criteria(models::Credits::Cols::_origin, orm::CompareOperator::EQ, enumToInt(origin))
@@ -308,7 +335,7 @@ inline coro::task<bool> hasImage(const int64_t mediaItemID, const ImageType type
 {
     try
     {
-        auto res = co_await drogon::app().getDbClient()->execSqlCoro("select image.id as id, image.path as path from media_item_image_assignments assignments inner join images image on (image.image_type_id = $2 and (image.language_id = $3 or image.language_id = $4)) where (assignments.media_item_id = $1) limit 1", mediaItemID, enumToInt(type), enumToInt(language), enumToInt(Language::xx));
+        auto res = co_await DbPtrWithForeignKey()->execSqlCoro("select image.id as id, image.path as path from media_item_image_assignments assignments inner join images image on (image.image_type_id = $2 and (image.language_id = $3 or image.language_id = $4)) where (assignments.media_item_id = $1) limit 1", mediaItemID, enumToInt(type), enumToInt(language), enumToInt(Language::xx));
         auto resCount = res.size();
         if (resCount > 0)
         {
@@ -355,7 +382,7 @@ coro::task<bool> isGenreAssigned(const int64_t genreID, const int64_t mediaItemI
 inline coro::task<bool> isGenreLocalized(const int64_t genreID, const Language language, orm::DbClientPtr dbPointer = nullptr)
 {
     if (!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     co_return co_await recordExists<models::GenreLocalizations>(orm::Criteria(models::GenreLocalizations::Cols::_genre_id, orm::CompareOperator::EQ, genreID)
     && orm::Criteria(models::GenreLocalizations::Cols::_language_id, orm::CompareOperator::EQ, enumToInt(language)), dbPointer);
 }
@@ -363,7 +390,7 @@ inline coro::task<bool> isGenreLocalized(const int64_t genreID, const Language l
 inline coro::task<bool> isPersonLocalized(const int64_t personID, const Language language, orm::DbClientPtr dbPointer = nullptr)
 {
     if (!dbPointer)
-        dbPointer = app().getDbClient();
+        dbPointer = DbPtrWithForeignKey();
     co_return co_await recordExists<models::PeopleLocalizations>(orm::Criteria(models::PeopleLocalizations::Cols::_person_id, orm::CompareOperator::EQ, personID)
     && orm::Criteria(models::PeopleLocalizations::Cols::_language_id, orm::CompareOperator::EQ, enumToInt(language)), dbPointer);
 }
@@ -395,4 +422,240 @@ bool isElementInContainer(const T& el, const std::array<T, size>& v)
     if (std::find(v.begin(), v.end(), el) != v.end())
         return true;
     return false;
+}
+
+inline coro::task<bool> deletePaths(const int64_t libraryID)
+{
+    co_return (co_await execSQL(nullptr, "delete from library_paths where (library_id = $1)", libraryID)).has_value();
+}
+
+
+inline coro::task<void> assignMediaItemsByLibrary(const int64_t libraryID)
+{
+    co_await execSQL(nullptr, "\
+        insert or ignore into media_item_library_assignments (library_id, media_item_id)\
+        SELECT\
+        libraries.id,\
+        items.id\
+        from media_items items\
+        inner join library_paths paths on\
+        (\
+            instr(items.path, paths.path) = 1\
+        )\
+        inner join libraries on\
+        (\
+            libraries.id = paths.library_id\
+        )\
+        WHERE\
+        (\
+            items.media_item_type_id in (0, 3)\
+            and libraries.id = $1\
+        )\
+        union SELECT\
+        libraries.id,\
+        seasons.id\
+        from media_items items\
+        inner join media_items seasons on\
+        (\
+            seasons.id = items.parent_id\
+            and seasons.media_item_type_id = 2\
+        )\
+        inner join library_paths paths on\
+        (\
+            instr(items.path, paths.path) = 1\
+        )\
+        inner join libraries on\
+        (\
+            libraries.id = paths.library_id\
+        )\
+        WHERE\
+        (\
+            items.media_item_type_id = 3\
+            and libraries.id = $1\
+        )\
+        union SELECT\
+        libraries.id,\
+        shows.id\
+        from media_items items\
+        inner join media_items seasons on\
+        (\
+            seasons.id = items.parent_id\
+            and seasons.media_item_type_id = 2\
+        )\
+        inner join media_items shows on\
+        (\
+            shows.id = seasons.parent_id\
+            and shows.media_item_type_id = 1\
+        )\
+        inner join library_paths paths on\
+        (\
+            instr(items.path, paths.path) = 1\
+        )\
+        inner join libraries on\
+        (\
+            libraries.id = paths.library_id\
+        )\
+        WHERE\
+        (\
+            items.media_item_type_id = 3\
+            and libraries.id = $1\
+        )\
+        ", libraryID);
+    co_return;
+}
+
+inline coro::task<void> assignMediaItems()
+{
+    co_await execSQL(nullptr, "\
+        insert or ignore into media_item_library_assignments (library_id, media_item_id)\
+        SELECT\
+        libraries.id,\
+        items.id\
+        from media_items items\
+        inner join library_paths paths on\
+        (\
+            instr(items.path, paths.path) = 1\
+        )\
+        inner join libraries on\
+        (\
+            libraries.id = paths.library_id\
+        )\
+        WHERE\
+        (\
+            items.media_item_type_id in (0, 3)\
+        )\
+        union SELECT\
+        libraries.id,\
+        seasons.id\
+        from media_items items\
+        inner join media_items seasons on\
+        (\
+            seasons.id = items.parent_id\
+            and seasons.media_item_type_id = 2\
+        )\
+        inner join library_paths paths on\
+        (\
+            instr(items.path, paths.path) = 1\
+        )\
+        inner join libraries on\
+        (\
+            libraries.id = paths.library_id\
+        )\
+        WHERE\
+        (\
+            items.media_item_type_id = 3\
+        )\
+        union SELECT\
+        libraries.id,\
+        shows.id\
+        from media_items items\
+        inner join media_items seasons on\
+        (\
+            seasons.id = items.parent_id\
+            and seasons.media_item_type_id = 2\
+        )\
+        inner join media_items shows on\
+        (\
+            shows.id = seasons.parent_id\
+            and shows.media_item_type_id = 1\
+        )\
+        inner join library_paths paths on\
+        (\
+            instr(items.path, paths.path) = 1\
+        )\
+        inner join libraries on\
+        (\
+            libraries.id = paths.library_id\
+        )\
+        WHERE\
+        (\
+            items.media_item_type_id = 3\
+        )\
+        ");
+    co_return;
+}
+
+inline coro::task<void> deleteUnAssignedMediaItems()
+{
+    auto unassignedMediaItems = co_await execSQL(nullptr, "select items.id as id from media_items items where (items.id not in (select media_item_library_assignments.media_item_id from media_item_library_assignments))");
+    if (!unassignedMediaItems)
+        co_return;
+    for (const auto& id : *unassignedMediaItems)
+    {
+        co_await deleteMediaItem(id["id"].as<int64_t>());
+    }
+    co_return;
+}
+
+inline coro::task<void> clearLibraryMediaItemsAssignments(const int64_t libraryID)
+{
+    co_await execSQL(nullptr, "delete from media_item_library_assignments where library_id = $1", libraryID);
+    co_return;
+}
+
+inline coro::task<std::vector<models::MediaItems>> getMediaItemsByLibrary(const int64_t libraryID)
+{
+    auto res = co_await execSQL(nullptr, "\
+        select\
+        items.*\
+        from media_item_library_assignments assignments\
+        inner join media_items items on\
+        (\
+            items.id = assignments.media_item_id\
+        )\
+        where\
+        (\
+            items.media_item_type_id in (0,1)\
+            and assignments.library_id = $1\
+        )\
+        ", libraryID);
+    std::vector<models::MediaItems> ret;
+    if (!res || (*res).empty())
+        co_return ret;
+    ret.reserve((*res).size());
+    for (auto& row : *res)
+    {
+        // auto mediaItem =  co_await findRecordByPrimaryKeyORM<models::MediaItems>(row["id"].as<int64_t>());
+        // if (!mediaItem)
+        //     continue;
+        ret.emplace_back(row);
+    }
+    co_return ret;
+}
+
+inline coro::task<void> getMediaItemTitle(const int64_t mediaItemID, const Language language, std::string& title, std::string& description, std::string& tagline)
+{
+    auto res = co_await execSQL(nullptr, "\
+        SELECT\
+        coalesce(loc.name, items.parsed_name) as name,\
+        coalesce(loc.description, '') as description,\
+        coalesce(loc.tagline, ''), tagline\
+        from media_items items\
+        inner join media_item_localizations loc on\
+        (\
+            loc.media_item_id = items.id\
+            and loc.language_id = $1\
+        )\
+        WHERE\
+        (\
+            items.id = $2\
+        )\
+        ", enumToInt(language), mediaItemID);
+    if (!res || (*res).empty())
+        co_return;
+    const auto& row = (*res)[0];
+    title = row["name"].as<std::string>();
+    description = row["description"].as<std::string>();
+    tagline = row["tagline"].as<std::string>();
+    co_return;
+}
+
+// inline coro::task<std::vector<models::MediaItems>> getMediaItemsChildren(const int64_t mediaItemID)
+// {
+//     models::MediaItems m;
+// }
+
+inline coro::task<size_t> getMediaItemChildrenCount(const int64_t mediaItemID)
+{
+    co_return co_await recordCount<models::MediaItems>(orm::Criteria(models::MediaItems::Cols::_parent_id, orm::CompareOperator::EQ, mediaItemID));
 }

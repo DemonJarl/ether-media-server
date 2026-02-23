@@ -4,15 +4,18 @@
 #include "LibraryPaths.h"
 #include "LibrarySettingsManager.hpp"
 #include "MediaEnums.h"
+#include "MediaItems.h"
 #include "MediaUtils.h"
 #include "ThreadPool.h"
 #include "Users.h"
 #include "coro/sync_wait.hpp"
+#include "coro/task.hpp"
 #include "utils/JsonUtils.h"
 #include "utils/Utils.h"
 #include <cstdint>
 #include <drogon/HttpResponse.h>
 #include <drogon/HttpTypes.h>
+#include <drogon/drogon_test.h>
 #include <drogon/orm/Criteria.h>
 #include <drogon/orm/DbClient.h>
 #include <drogon/orm/Exception.h>
@@ -34,6 +37,40 @@
 // перейти на uuid?
 using namespace api;
 namespace models = drogon_model::sqlite3;
+
+
+
+void Libraries::getMediaItems(const HttpRequestPtr &req,
+            std::function<void (const HttpResponsePtr &)> &&callback,
+            const int64_t libraryId)
+{
+    //drogon::utils::splitString(const std::string &str, const std::string &separator)
+    if (!coro::sync_wait(recordExists<models::Libraries>(orm::Criteria(models::Libraries::Cols::_id, orm::CompareOperator::EQ, libraryId))))
+    {
+        callback(errorResponse("", ErrorCode::ObjectNotFound, drogon::k404NotFound));
+        return;
+    }
+    Json::Value ret{};
+    Json::Value& jsonArr = (ret["items"] = Json::arrayValue);
+
+    std::vector<models::MediaItems> mediaItems = coro::sync_wait(getMediaItemsByLibrary(libraryId));
+    if (mediaItems.empty())
+    {
+        auto resp=HttpResponse::newHttpJsonResponse(std::move(ret));
+        callback(resp);
+        return;
+    }
+    ret["itemCount"] = mediaItems.size();
+    for (const auto& item : mediaItems)
+    {
+        jsonArr.append(coro::sync_wait(mediaItemToJson(item, Language::ru)));
+    }
+    auto resp=HttpResponse::newHttpJsonResponse(std::move(ret));
+    callback(resp);
+    return;
+    //findRecordsByCriteriaORM<>(orm::Criteria(models::Libraries::Cols::_id, orm::CompareOperator::EQ, libraryId))
+}
+
 void Libraries::getLibrary(const HttpRequestPtr &req,
             std::function<void (const HttpResponsePtr &)> &&callback,
             const int libraryId)
@@ -87,10 +124,9 @@ void Libraries::createLibrary(const HttpRequestPtr &req,
     Json::Value ret;
     Json::Value librarySettings = Json::nullValue;
     std::string err;
-    Json::Value reqJson = *req->getJsonObject();
+    Json::Value& reqJson = *req->getJsonObject();
     
     // Сделать функцию для валидации настроек библиотеки
-    //reqJson["settings"] = defaultLibrarySetting();
     if (reqJson["settings"].empty() || !reqJson["settings"].isObject())
         reqJson["settings"] = LibrarySettingsManager::defaultLibrarySetting().toStyledString();
 
@@ -100,48 +136,26 @@ void Libraries::createLibrary(const HttpRequestPtr &req,
         return;
     }
     models::Libraries library(reqJson);
-    try 
+    if (!coro::sync_wait(insertRecord(library)))
     {
-        mp.insert   (library);
-        // if (reqJson.isMember("paths"))
-        //     if (reqJson["paths"].isArray())
-        //     {
-        //         models::LibraryPaths libraryPath{};
-        //         libraryPath.setLibraryId(*library.getId());
-        //         //  Надо наверное сделать это транзакцией
-        //         for (auto path : reqJson["paths"])
-        //         {
-        //             orm::Mapper<models::LibraryPaths> mpPaths(dbClientPtr);
-        //             std::string sPath = path.asString();
-        //             if (sPath.size() == 0)
-        //                 continue;
-        //             LOG_DEBUG<<"Path "<<sPath;
-        //             if (!pathExists(sPath))
-        //             {
-        //                 LOG_ERROR << "Не существующий путь при создание библиотеки";
-        //                 continue;//Или прекращать создавание?
-        //             }
-        //             libraryPath.setId(utils::getUuid());
-        //             libraryPath.setPath(sPath);
-        //             // возращать id путей не буду
-        //             mpPaths.insert(libraryPath); // Подумать что делать с дубликатами
-        //         }
-        //     }
-    } 
-    catch (drogon::orm::UniqueViolation e) { // сделаем пустой обработчик для UniqueViolation (пусть только логирует)
-        LOG_WARN<<e.what();
-        //std::cerr << "error:" << e.what() << std::endl;
-        //callback(errorResponse("Database error", ErrorCode::DataBaseError, HttpStatusCode::k500InternalServerError));
-        //return;
+        callback(errorResponse(err, ErrorCode::IncorectData, HttpStatusCode::k422UnprocessableEntity));
+        return;
     }
-    catch (drogon::orm::UnexpectedRows e)
+    if (findAndCheckNullArray(reqJson, "paths"))
     {
-        LOG_ERROR<<e.what();
-        transaction->rollback();
+        int64_t libraryId = library.getPrimaryKey();
+        for (const auto& path : reqJson["paths"])
+        {
+            if (!path.is<std::string>())
+                continue;
+            std::string p = path.asString();
+            if (!pathExists(p))
+                continue;
+            coro::sync_wait(insertPath(libraryId, p));
+        }
     }
-    ret["library"]= library.toJson();
+    ret = coro::sync_wait(libraryToJson(library));
     ret["result"] = "ok";
-    LOG_DEBUG<<err;
     auto resp=HttpResponse::newHttpJsonResponse(ret);
     resp->setStatusCode(HttpStatusCode::k200OK);
     callback(resp);
@@ -189,40 +203,57 @@ void Libraries::modifyLibrary(const HttpRequestPtr &req,
     orm::DbClientPtr dbClientPtr = drogon::app().getDbClient();
     std::shared_ptr<orm::Transaction> transaction = dbClientPtr->newTransaction();
     orm::Mapper<models::Libraries> mp(transaction);
-    Json::Value reqJson = *req->getJsonObject();
-    models::Libraries library;
-    try 
+    Json::Value& reqJson = *req->getJsonObject();
+    if (reqJson.empty())
     {
-        library = mp.findByPrimaryKey(libraryId);
-    } 
-    catch (drogon::orm::UnexpectedRows e) 
-    {
-        LOG_ERROR<<"Ошибка запроса: "<<e.what();
-        callback(errorResponse("Попытка модификации не существующего объекта", ErrorCode::ObjectNotFound, HttpStatusCode::k404NotFound));
+        callback(errorResponse("", ErrorCode::EmptyData, drogon::k400BadRequest));
+        return;
     }
-    Json::Value ret;
-    std::string err;
-    if (library.validateJsonForUpdate(reqJson, err)) // смысл делать операции с бд если они индентичные
+    auto library = coro::sync_wait(findRecordByPrimaryKeyORM<models::Libraries>(libraryId));
+    if (!library)
     {
-        try 
+        callback(errorResponse("", ErrorCode::ObjectNotFound, drogon::k404NotFound));
+        return;
+    }
+    Json::Value ret{};
+    bool libraryModified;
+    if (findAndCheckNullAndType<std::string>(reqJson, "name"))
+    {
+        libraryModified = true;
+        (*library).setName(reqJson["name"].asString());
+    }
+    if (findAndCheckNullAndType<std::string>(reqJson, "settings"))
+    {
+        libraryModified = true;
+        (*library).setSettings(reqJson["settings"].asString());
+    }
+    if (libraryModified)
+    {
+        if (!coro::sync_wait(updateRecord(*library)))
         {
-            library.updateByJson(reqJson);
-        } 
-        catch (const drogon::orm::UnexpectedRows& e) 
-        {
-            std::cerr << "error:" << e.what() << std::endl;
-            callback(errorResponse("", ErrorCode::DataBaseError, HttpStatusCode::k400BadRequest));
+            callback(errorResponse("", ErrorCode::IncorectData, HttpStatusCode::k422UnprocessableEntity));
+            return;
         }
-        ret["result"] = "ok";
-        auto resp=HttpResponse::newHttpJsonResponse(ret);
-        resp->setStatusCode(HttpStatusCode::k200OK);
-        callback(resp);
     }
-    else {
-        LOG_DEBUG<<err;
-        transaction->rollback();
-        callback(errorResponse("Некоректные данные", ErrorCode::IncorectData, HttpStatusCode::k400BadRequest));
+
+    if (findAndCheckNullArray(reqJson, "paths"))
+    {
+        coro::sync_wait(deletePaths(libraryId));
+        coro::sync_wait(clearLibraryMediaItemsAssignments(libraryId));
+        for (const auto& path : reqJson["paths"])
+        {
+            if (!path.is<std::string>())
+                continue;
+            std::string p = path.asString();
+            if (!pathExists(p))
+                continue;
+            coro::sync_wait(insertPath(libraryId, p));
+        }
+        coro::sync_wait(assignMediaItemsByLibrary(libraryId));
+        coro::sync_wait(deleteUnAssignedMediaItems());
     }
+    ret = coro::sync_wait(libraryToJson(*library));
+    callback(HttpResponse::newHttpJsonResponse(ret));
     return;
 }
 
@@ -429,8 +460,6 @@ void Libraries::updateLibraryPath(const HttpRequestPtr &req,
             return;
         }
     }
-    size_t deletitionCount{};
-    // Хотя мы можем словить ошибку БД если у нас что то будет с подключением
     models::Libraries library;
     models::LibraryPaths path;
     std::future<size_t> updateFuture;

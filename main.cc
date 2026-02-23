@@ -1,11 +1,14 @@
 #include <drogon/HttpAppFramework.h>
 #include <drogon/drogon.h>
+#include <drogon/orm/Exception.h>
 #include <trantor/utils/Logger.h>
+#include "Credits.h"
 #include "Enums/Enums.hpp"
 #include "ServerSettingsManager.hpp"
 #include "ThreadPool.h"
 #include "MetaDataAPI/TMDB/BaseAPI.hpp"
 #include "DBUtils.h"
+#include "drogon/drogon.h"
 int main() {
     LOG_DEBUG<<"SPD "<<trantor::Logger::hasSpdLogSupport();
     //Set HTTP listener address and port
@@ -18,12 +21,14 @@ int main() {
             resp->addHeader("Access-Control-Allow-Origin", "*");
             req->addHeader("Access-Control-Allow-Origin", "*");
         });
+
     // Функция запускается сражу же после запуска сервера
     drogon::app().registerBeginningAdvice([]{
         ServerSettingsManager& serverSettings = ServerSettingsManager::Instance();
         TMDBAPI::BaseAPI::setLanguage(TMDBAPI::Languages::Ru);
         TMDBAPI::BaseAPI::setKey(serverSettings.getTMDBKey());
     });
+    
     drogon::app().setIntSignalHandler([]{
         LOG_INFO<<"Сервер выключается";
         stopScanning = true;
